@@ -65,7 +65,7 @@ class ItemListing(BaseModel):
     itemName: str
 
     @classmethod
-    def from_api(cls, data: dict, itemName: str) -> "Listing":
+    def from_api(cls, data: dict, itemName: str) -> "ItemListing":
         return cls(
             steamid=data["steamid"],
             intent=data["intent"],

@@ -33,8 +33,6 @@ async def snapshot(
     return await bp.get_snapshot(sku, intent=intent, raw=raw)
 
 
-# @app.get("/buyorders"):
-# async def buyorders():
 @app.get("/beatenBuyorders")
 async def beatenBuyorders():
     return await scanner.find_beaten_orders()
