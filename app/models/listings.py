@@ -79,3 +79,12 @@ class ItemListing(BaseModel):
     def has_spell(attrs: list[dict]) -> bool:
         spell_defs = {"1004", "1005", "1006"}
         return any(str(a.get("defindex")) in spell_defs for a in attrs)
+
+
+class BuyorderData(BaseModel):
+    steamid: str
+    outbid_by: str | None
+    name: str
+    users_price: CurrencyValue
+    highest_price: CurrencyValue
+    outbid: bool
