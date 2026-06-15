@@ -1,5 +1,6 @@
 from pydantic import BaseModel
 from typing import Optional
+from urllib.parse import urlencode
 
 
 class CurrencyValue(BaseModel):
@@ -31,6 +32,7 @@ class Listing(BaseModel):
     currencies: CurrencyValue
     details: Optional[str] = None
     item: Item
+    item_url: str
     listedAt: int
 
     @classmethod
@@ -52,8 +54,23 @@ class Listing(BaseModel):
                 particle=item.get("particle", {}).get("name"),
                 spells=spells,
             ),
+            item_url=cls._build_classifieds_url(item),
             listedAt=data["listedAt"],
         )
+
+    # TODO: make work on more item types
+    @classmethod
+    def _build_classifieds_url(cls, item: dict) -> str:
+        params = {
+            "item": item.get("baseName", ""),
+            "quality": item.get("quality", {}).get("id", 6),
+            "craftable": int(item.get("craftable", -1)),
+        }
+
+        particle = item.get("particle")
+        if particle and particle.get("id"):
+            params["particle"] = particle["id"]
+        return "https://backpack.tf/classifieds?" + urlencode(params)
 
 
 class ItemListing(BaseModel):
