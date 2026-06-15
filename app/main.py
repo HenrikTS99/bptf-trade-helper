@@ -19,9 +19,11 @@ async def prices():
 
 @app.get("/listings")
 async def listings(
-    intent: Intent | None = Query(default=None), raw: bool = Query(default=False)
+    intent: Intent | None = Query(default=None),
+    raw: bool = Query(default=False),
+    limit: int = Query(default=1000),
 ):
-    return await bp.get_listings(intent=intent, raw=raw)
+    return await bp.get_listings(intent=intent, raw=raw, limit=limit)
 
 
 @app.get("/listings/item")
@@ -34,5 +36,5 @@ async def snapshot(
 
 
 @app.get("/beatenBuyorders")
-async def beatenBuyorders():
-    return await scanner.find_beaten_orders()
+async def beatenBuyorders(limit: int = Query(default=10)):
+    return await scanner.find_outbids(limit=limit)
