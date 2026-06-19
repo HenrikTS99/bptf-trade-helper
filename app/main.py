@@ -1,15 +1,26 @@
+from contextlib import asynccontextmanager
 from app.config import Settings
 from fastapi import FastAPI, Query
 from app.core.bp_client import BackpackTFClient
 from app.core.scanner import Scanner
 from app.models.enums import Intent
+from app.db.base import Base, engine
+from app.db import models
 
 
 settings = Settings()
 bp = BackpackTFClient(settings.bp_api_key, settings.bp_token)
 scanner = Scanner(bp)
 
-app = FastAPI()
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+    yield
+
+
+app = FastAPI(lifespan=lifespan)
 
 
 @app.get("/prices")
