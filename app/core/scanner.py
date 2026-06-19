@@ -1,5 +1,5 @@
 from .bp_client import BackpackTFClient, BackpackTFError
-from app.models.listings import CurrencyValue, ItemListing, Listing, BuyorderData
+from app.models.listings import CurrencyValue, SnapshotBPListing, BPListing, BuyorderData
 import logging
 import asyncio
 
@@ -20,7 +20,7 @@ class Scanner:
         orders, _ = await self.bp.get_listings(intent="buy", limit=limit)
         return await self._find_outbid_orders(orders)
 
-    async def _find_outbid_orders(self, orders: list[Listing]) -> list[BuyorderData]:
+    async def _find_outbid_orders(self, orders: list[BPListing]) -> list[BuyorderData]:
         beaten_orders = []
         for order in orders:
             await asyncio.sleep(1)  # for rate limiter
@@ -45,26 +45,26 @@ class Scanner:
             beaten_orders.append(buyorder_data)
         return beaten_orders
 
-    async def _fetch_item_buyorders(self, item_name: str) -> list[ItemListing]:
+    async def _fetch_item_buyorders(self, item_name: str) -> list[SnapshotBPListing]:
         item_listings = await self.bp.get_snapshot(item_name)
         buyorders = [listing for listing in item_listings if listing.intent == "buy"]
         return buyorders
 
-    def _resolve_users_price(self, buyorders: list[ItemListing]) -> CurrencyValue:
+    def _resolve_users_price(self, buyorders: list[SnapshotBPListing]) -> CurrencyValue:
         users_buyorder = next((b for b in buyorders if b.steamid == self.steamid), None)
         if not users_buyorder:
             raise BuyorderError("users buyorder not found")
         return users_buyorder.currencies
 
     def _find_outbidding_order(
-        self, buyorders: list[ItemListing], users_price: CurrencyValue
-    ) -> ItemListing | None:
+        self, buyorders: list[SnapshotBPListing], users_price: CurrencyValue
+    ) -> SnapshotBPListing | None:
         for buyorder in buyorders:
             if self._outbids_user(buyorder, users_price):
                 return buyorder
         return None
 
-    def _outbids_user(self, buyorder: ItemListing, users_price: CurrencyValue) -> bool:
+    def _outbids_user(self, buyorder: SnapshotBPListing, users_price: CurrencyValue) -> bool:
         if buyorder.steamid == self.steamid or buyorder.isSpelled:
             return False
         if buyorder.currencies > users_price:
@@ -72,7 +72,7 @@ class Scanner:
         return False
 
     def _build_buyorder_data(
-        self, item_name: str, users_price: CurrencyValue, outbidder: ItemListing | None
+        self, item_name: str, users_price: CurrencyValue, outbidder: SnapshotBPListing | None
     ) -> BuyorderData:
         buyorder_data = BuyorderData(
             steamid=self.steamid,

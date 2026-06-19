@@ -15,7 +15,7 @@ class CurrencyValue(BaseModel):
         return (self.metal or 0) > (other.metal or 0)
 
 
-class Item(BaseModel):
+class ItemData(BaseModel):
     name: str
     baseName: str
     quality: str
@@ -23,7 +23,7 @@ class Item(BaseModel):
     spells: list[str] = []
 
 
-class Listing(BaseModel):
+class BPListing(BaseModel):
     id: str
     steamid: str
     intent: str
@@ -31,12 +31,12 @@ class Listing(BaseModel):
     status: str
     currencies: CurrencyValue
     details: Optional[str] = None
-    item: Item
+    item: ItemData
     item_url: str
     listedAt: int
 
     @classmethod
-    def from_api(cls, data: dict) -> "Listing":
+    def from_api(cls, data: dict) -> "BPListing":
         item = data.get("item", {})
         spells = [s["name"] for s in item.get("spells", [])]
         return cls(
@@ -47,7 +47,7 @@ class Listing(BaseModel):
             status=data["status"],
             currencies=CurrencyValue(**data.get("currencies", {})),
             details=data.get("details"),
-            item=Item(
+            item=ItemData(
                 name=item.get("name", ""),
                 baseName=item.get("baseName", ""),
                 quality=item.get("quality", {}).get("name", ""),
@@ -73,7 +73,7 @@ class Listing(BaseModel):
         return "https://backpack.tf/classifieds?" + urlencode(params)
 
 
-class ItemListing(BaseModel):
+class SnapshotBPListing(BaseModel):
     steamid: str
     intent: str
     currencies: CurrencyValue
@@ -82,7 +82,7 @@ class ItemListing(BaseModel):
     itemName: str
 
     @classmethod
-    def from_api(cls, data: dict, itemName: str) -> "ItemListing":
+    def from_api(cls, data: dict, itemName: str) -> "SnapshotBPListing":
         return cls(
             steamid=data["steamid"],
             intent=data["intent"],

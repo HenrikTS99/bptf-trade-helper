@@ -1,4 +1,4 @@
-from app.models.listings import Listing, ItemListing
+from app.models.listings import BPListing, SnapshotBPListing
 import httpx
 import asyncio
 import logging
@@ -27,21 +27,21 @@ class BackpackTFClient:
 
     async def get_listings(
         self, intent: str | None = None, raw: bool = False, limit: int = 1000
-    ) -> tuple[list[Listing], dict | None]:
+    ) -> tuple[list[BPListing], dict | None]:
         params = {"key": self.api_key, "limit": limit}
         return await self._fetch_listings(
             "/v2/classifieds/listings",
             params=params,
-            parser=Listing.from_api,
+            parser=BPListing.from_api,
             intent=intent,
             raw=raw,
         )
 
     async def get_snapshot(
         self, sku: str, intent: str | None = None, raw: bool = False
-    ) -> list[ItemListing]:
+    ) -> list[SnapshotBPListing]:
         def parse(data):
-            return ItemListing.from_api(data, sku)
+            return SnapshotBPListing.from_api(data, sku)
 
         logger.info("fetching snapshot for item:%s", sku)
 
