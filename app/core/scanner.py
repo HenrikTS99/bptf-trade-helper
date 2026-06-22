@@ -1,7 +1,14 @@
-from .bp_client import BackpackTFClient, BackpackTFError
-from app.models.listings import CurrencyValue, SnapshotBPListing, BPListing, BuyorderData
-import logging
 import asyncio
+import logging
+
+from app.models.listings import (
+    BPListing,
+    BuyorderData,
+    CurrencyValue,
+    SnapshotBPListing,
+)
+
+from .bp_client import BackpackTFClient, BackpackTFError
 
 logger = logging.getLogger(__name__)
 
@@ -64,7 +71,9 @@ class Scanner:
                 return buyorder
         return None
 
-    def _outbids_user(self, buyorder: SnapshotBPListing, users_price: CurrencyValue) -> bool:
+    def _outbids_user(
+        self, buyorder: SnapshotBPListing, users_price: CurrencyValue
+    ) -> bool:
         if buyorder.steamid == self.steamid or buyorder.isSpelled:
             return False
         if buyorder.currencies > users_price:
@@ -72,7 +81,10 @@ class Scanner:
         return False
 
     def _build_buyorder_data(
-        self, item_name: str, users_price: CurrencyValue, outbidder: SnapshotBPListing | None
+        self,
+        item_name: str,
+        users_price: CurrencyValue,
+        outbidder: SnapshotBPListing | None,
     ) -> BuyorderData:
         buyorder_data = BuyorderData(
             steamid=self.steamid,

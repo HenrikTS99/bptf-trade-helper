@@ -1,7 +1,9 @@
-from app.models.listings import BPListing, SnapshotBPListing
-import httpx
 import asyncio
 import logging
+
+import httpx
+
+from app.models.listings import BPListing, SnapshotBPListing
 
 logger = logging.getLogger(__name__)
 

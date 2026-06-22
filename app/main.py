@@ -1,13 +1,15 @@
+import logging
 from contextlib import asynccontextmanager
+
+from fastapi import Depends, FastAPI, Query
 from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.config import Settings
-from fastapi import FastAPI, Query, Depends
 from app.core.bp_client import BackpackTFClient
 from app.core.scanner import Scanner
-from app.models.enums import Intent
 from app.db.base import Base, engine, get_db
-from app.services.listing_service import sync_listings, get_stored_listings
-import logging
+from app.models.enums import Intent
+from app.services.listing_service import get_stored_listings, sync_listings
 
 logging.basicConfig(level=logging.INFO)
 

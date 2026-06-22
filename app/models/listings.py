@@ -1,6 +1,7 @@
-from pydantic import BaseModel
 from typing import Optional
 from urllib.parse import urlencode
+
+from pydantic import BaseModel
 
 
 class CurrencyValue(BaseModel):
