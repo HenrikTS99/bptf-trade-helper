@@ -16,6 +16,7 @@ class CurrencyValue(BaseModel):
 
 
 class ItemData(BaseModel):
+    defindex: int
     name: str
     baseName: str
     quality: str
@@ -48,6 +49,7 @@ class BPListing(BaseModel):
             currencies=CurrencyValue(**data.get("currencies", {})),
             details=data.get("details"),
             item=ItemData(
+                defindex=item.get("defindex", ""),
                 name=item.get("name", ""),
                 baseName=item.get("baseName", ""),
                 quality=item.get("quality", {}).get("name", ""),

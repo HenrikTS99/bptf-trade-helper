@@ -1,5 +1,5 @@
 from datetime import datetime
-from sqlalchemy import CheckConstraint, func, ForeignKey
+from sqlalchemy import CheckConstraint, func, ForeignKey, UniqueConstraint
 from app.db.base import Base
 
 from sqlalchemy.orm import (
@@ -16,19 +16,21 @@ class User(Base):
 
 class Listing(Base):
     __tablename__ = "listings"
-    id: Mapped[int] = mapped_column(primary_key=True)
-    steamid: Mapped[int]
+    id: Mapped[str] = mapped_column(primary_key=True)
+    steamid: Mapped[str]
     intent: Mapped[str] = mapped_column(CheckConstraint("intent IN ('buy', 'sell')"))
     status: Mapped[str] = mapped_column(default="active")
     keys: Mapped[int | None] = mapped_column(default=0)
     metal: Mapped[float | None] = mapped_column(default=0.0)
 
     item_id: Mapped[int] = mapped_column(ForeignKey("items.id"))
+    item_url: Mapped[str]
     item: Mapped["Item"] = relationship(back_populates="listings")
 
 
 class Item(Base):
     __tablename__ = "items"
+    __table_args__ = (UniqueConstraint("name", "quality", "particle", name="uq_item"),)
     id: Mapped[int] = mapped_column(primary_key=True)
     defindex: Mapped[int]
     name: Mapped[str]

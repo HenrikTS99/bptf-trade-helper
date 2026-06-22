@@ -26,9 +26,9 @@ class BackpackTFClient:
         )
 
     async def get_listings(
-        self, intent: str | None = None, raw: bool = False, limit: int = 1000
+        self, intent: str | None = None, raw: bool = False, limit: int = 1000, skip=0
     ) -> tuple[list[BPListing], dict | None]:
-        params = {"key": self.api_key, "limit": limit}
+        params = {"key": self.api_key, "limit": limit, "skip": skip}
         return await self._fetch_listings(
             "/v2/classifieds/listings",
             params=params,

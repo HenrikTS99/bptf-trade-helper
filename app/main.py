@@ -1,12 +1,15 @@
 from contextlib import asynccontextmanager
+from sqlalchemy.ext.asyncio import AsyncSession
 from app.config import Settings
-from fastapi import FastAPI, Query
+from fastapi import FastAPI, Query, Depends
 from app.core.bp_client import BackpackTFClient
 from app.core.scanner import Scanner
 from app.models.enums import Intent
-from app.db.base import Base, engine
-from app.db import models
+from app.db.base import Base, engine, get_db
+from app.services.listing_service import sync_listings, get_stored_listings
+import logging
 
+logging.basicConfig(level=logging.INFO)
 
 settings = Settings()
 bp = BackpackTFClient(settings.bp_api_key, settings.bp_token)
@@ -30,11 +33,16 @@ async def prices():
 
 @app.get("/listings")
 async def listings(
-    intent: Intent | None = Query(default=None),
-    raw: bool = Query(default=False),
-    limit: int = Query(default=1000),
+    intent: Intent | None = Query(default=None), db: AsyncSession = Depends(get_db)
 ):
-    return await bp.get_listings(intent=intent, raw=raw, limit=limit)
+    return await get_stored_listings(db, intent=intent)
+
+
+@app.get("/listings/sync")
+async def update_listings(
+    db: AsyncSession = Depends(get_db),
+):
+    return await sync_listings(db, bp, sync_all=True)
 
 
 @app.get("/listings/item")
