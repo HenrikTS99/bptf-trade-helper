@@ -5,7 +5,7 @@ from pydantic import BaseModel
 
 
 class CurrencyValue(BaseModel):
-    keys: Optional[int] = 0
+    keys: Optional[float] = 0  # Float due to validation errors
     metal: Optional[float] = 0
 
     def __gt__(self, other: "CurrencyValue") -> bool:
@@ -106,5 +106,5 @@ class BuyorderData(BaseModel):
     outbid_by: str | None
     name: str
     users_price: CurrencyValue
-    highest_price: CurrencyValue
+    top_competitor_price: CurrencyValue
     outbid: bool

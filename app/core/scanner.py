@@ -1,14 +1,12 @@
-import asyncio
 import logging
 
 from app.models.listings import (
-    BPListing,
-    BuyorderData,
     CurrencyValue,
     SnapshotBPListing,
 )
 
-from .bp_client import BackpackTFClient, BackpackTFError
+from .bp_client import BackpackTFClient
+
 
 logger = logging.getLogger(__name__)
 
@@ -23,35 +21,6 @@ class Scanner:
         # TODO: get user steamid
         self.steamid = "76561198061440669"
 
-    async def find_outbids(self, limit: int = 10) -> list[BuyorderData]:
-        orders, _ = await self.bp.get_listings(intent="buy", limit=limit)
-        return await self._find_outbid_orders(orders)
-
-    async def _find_outbid_orders(self, orders: list[BPListing]) -> list[BuyorderData]:
-        beaten_orders = []
-        for order in orders:
-            await asyncio.sleep(1)  # for rate limiter
-            try:
-                buyorders = await self._fetch_item_buyorders(order.item.name)
-            except BackpackTFError as e:
-                logger.warning(
-                    "Failed to fetch snapshot for %s: %s", order.item.name, e
-                )
-                continue
-            try:
-                users_price = self._resolve_users_price(buyorders)
-            except BuyorderError as e:
-                logger.warning(
-                    "No buyorder found for %s, skipping. Error: %s", order.item.name, e
-                )
-                continue
-            outbidder = self._find_outbidding_order(buyorders, users_price)
-            buyorder_data = self._build_buyorder_data(
-                order.item.name, users_price, outbidder
-            )
-            beaten_orders.append(buyorder_data)
-        return beaten_orders
-
     async def _fetch_item_buyorders(self, item_name: str) -> list[SnapshotBPListing]:
         item_listings = await self.bp.get_snapshot(item_name)
         buyorders = [listing for listing in item_listings if listing.intent == "buy"]
@@ -63,39 +32,43 @@ class Scanner:
             raise BuyorderError("users buyorder not found")
         return users_buyorder.currencies
 
-    def _find_outbidding_order(
-        self, buyorders: list[SnapshotBPListing], users_price: CurrencyValue
+    def _get_highest_competitor_buyorder(
+        self, buyorders: list[SnapshotBPListing]
     ) -> SnapshotBPListing | None:
-        for buyorder in buyorders:
-            if self._outbids_user(buyorder, users_price):
-                return buyorder
-        return None
+        highest = None
+        for order in buyorders:
+            if order.steamid == self.steamid or order.isSpelled:
+                continue
+            if highest is None or order.currencies > highest.currencies:
+                highest = order
+        return highest
 
-    def _outbids_user(
-        self, buyorder: SnapshotBPListing, users_price: CurrencyValue
-    ) -> bool:
-        if buyorder.steamid == self.steamid or buyorder.isSpelled:
-            return False
-        if buyorder.currencies > users_price:
-            return True
-        return False
+    # def _outbids_user(
+    #     self, buyorder: SnapshotBPListing, users_price: CurrencyValue
+    # ) -> bool:
+    #     if buyorder.steamid == self.steamid or buyorder.isSpelled:
+    #         return False
+    #     if buyorder.currencies > users_price:
+    #         return True
+    #     return False
 
-    def _build_buyorder_data(
-        self,
-        item_name: str,
-        users_price: CurrencyValue,
-        outbidder: SnapshotBPListing | None,
-    ) -> BuyorderData:
-        buyorder_data = BuyorderData(
-            steamid=self.steamid,
-            outbid_by=None,
-            name=item_name,
-            users_price=users_price,
-            highest_price=users_price,
-            outbid=False,
-        )
-        if outbidder:
-            buyorder_data.outbid_by = outbidder.steamid
-            buyorder_data.highest_price = outbidder.currencies
-            buyorder_data.outbid = True
-        return buyorder_data
+    # def _build_buyorder_data(
+    #     self,
+    #     item_name: str,
+    #     users_price: CurrencyValue,
+    #     top_competitor_buyorder: SnapshotBPListing | None,
+    # ) -> BuyorderData:
+    #     outbid = False
+    #     if top_competitor_buyorder:
+    #         outbid = users_price < top_competitor_buyorder.currencies
+    #     buyorder_data = BuyorderData(
+    #         steamid=self.steamid,
+    #         outbid_by=None,
+    #         name=item_name,
+    #         users_price=users_price,
+    #         top_competitor_price=top_competitor_buyorder,
+    #         outbid=outbid,
+    #     )
+    #     if outbid and top_competitor_buyorder:
+    #         buyorder_data.outbid_by = top_competitor_buyorder.steamid
+    #     return buyorder_data

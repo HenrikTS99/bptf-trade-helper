@@ -9,7 +9,12 @@ from app.core.bp_client import BackpackTFClient
 from app.core.scanner import Scanner
 from app.db.base import Base, engine, get_db
 from app.models.enums import Intent
-from app.services.listing_service import get_stored_listings, sync_listings
+from app.services.listing_service import (
+    get_stored_buyorder_states,
+    get_stored_listings,
+    sync_listings,
+)
+from app.scheduler import scheduler, init_scheduler
 
 logging.basicConfig(level=logging.INFO)
 
@@ -22,7 +27,11 @@ scanner = Scanner(bp)
 async def lifespan(app: FastAPI):
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+
+    init_scheduler(bp, scanner)
+    scheduler.start()
     yield
+    scheduler.shutdown()
 
 
 app = FastAPI(lifespan=lifespan)
@@ -47,6 +56,22 @@ async def update_listings(
     return await sync_listings(db, bp, sync_all=True)
 
 
+@app.get("/buyorder_states")
+async def stored_buyorder_states(
+    only_beaten: bool = Query(default=False),
+    db: AsyncSession = Depends(get_db),
+):
+    return await get_stored_buyorder_states(db, only_beaten=only_beaten)
+
+
+@app.get("/buyorder_states/total_buyorders_outbid")
+async def total_buyorders_outbid(
+    db: AsyncSession = Depends(get_db),
+):
+    buyorder_states = await get_stored_buyorder_states(db, only_beaten=True)
+    return len(buyorder_states)
+
+
 @app.get("/listings/item")
 async def snapshot(
     sku: str,
@@ -56,6 +81,6 @@ async def snapshot(
     return await bp.get_snapshot(sku, intent=intent, raw=raw)
 
 
-@app.get("/beatenBuyorders")
-async def beatenBuyorders(limit: int = Query(default=10)):
-    return await scanner.find_outbids(limit=limit)
+# @app.get("/beatenBuyorders")
+# async def beatenBuyorders(limit: int = Query(default=10)):
+#     return await scanner.find_outbids(limit=limit)
