@@ -9,11 +9,8 @@ from app.core.bp_client import BackpackTFClient
 from app.core.scanner import Scanner
 from app.db.base import Base, engine, get_db
 from app.models.enums import Intent
-from app.services.listing_service import (
-    get_stored_buyorder_states,
-    get_stored_listings,
-    sync_listings,
-)
+from app.services.listing_service import sync_listings
+from app.crud import get_stored_buyorder_states, get_stored_listings
 from app.scheduler import scheduler, init_scheduler
 
 logging.basicConfig(level=logging.INFO)
@@ -79,8 +76,3 @@ async def snapshot(
     raw: bool = Query(default=False),
 ):
     return await bp.get_snapshot(sku, intent=intent, raw=raw)
-
-
-# @app.get("/beatenBuyorders")
-# async def beatenBuyorders(limit: int = Query(default=10)):
-#     return await scanner.find_outbids(limit=limit)

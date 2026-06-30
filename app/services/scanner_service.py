@@ -1,18 +1,16 @@
+import asyncio
 import logging
+
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.core.bp_client import BackpackTFError
+from app.core.scanner import BuyorderError, Scanner
+from app.crud import get_stored_listings
+from app.db import models
 from app.models.listings import (
-    BPListing,
     CurrencyValue,
     SnapshotBPListing,
 )
-import asyncio
-from app.core.scanner import Scanner, BuyorderError
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
-from app.services.listing_service import get_stored_listings
-from app.core.bp_client import BackpackTFError
-from app.db import models
-
-from app.models.listings import BPListing
 
 logger = logging.getLogger(__name__)
 
@@ -40,12 +38,7 @@ async def _update_buyorder_data(
         )
         return
     top_competitor_buyorder = scanner._get_highest_competitor_buyorder(buyorders)
-    # outbidder = self._find_outbidding_order(buyorders, users_price)
-    # buyorder_data = self._build_buyorder_data(
-    #     order.item.name, users_price, top_competitor_buyorder
-    # )
     await _update_buyorder_state(db, order, users_price, top_competitor_buyorder)
-    # await _upsert_buyorder_state(db, buyorder_state)
 
 
 async def _update_buyorder_state(
@@ -74,20 +67,3 @@ async def _update_buyorder_state(
     await db.commit()
     logger.info("Updated buyorder state for buyorder for item %s", listing.item.name)
     return buyorder_state
-
-
-# async def _upsert_buyorder_state(db, buyorder_state):
-#     result = await db.execute(
-#         select(models.BuyorderState).where(models.BuyorderState.id == buyorder_state.id)
-#     )
-#     # Give first column of first row, no rows returns None
-#     existing = result.scalar_one_or_none()
-#
-#     if existing:
-#         existing.user_keys = buyorder_state.user_keys
-#         existing.user_metal = buyorder_state.user_metal
-#         existing.top_competitor_keys = buyorder_state.top_competitor_keys
-#         existing.top_competitor_metal = buyorder_state.top_competitor_metal
-#         existing.outbid_by = buyorder_state.outbid_by
-#         existing.is_outbid = buyorder_state.is_outbid
-#         return

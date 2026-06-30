@@ -7,7 +7,6 @@ from app.models.listings import (
 
 from .bp_client import BackpackTFClient
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -42,33 +41,3 @@ class Scanner:
             if highest is None or order.currencies > highest.currencies:
                 highest = order
         return highest
-
-    # def _outbids_user(
-    #     self, buyorder: SnapshotBPListing, users_price: CurrencyValue
-    # ) -> bool:
-    #     if buyorder.steamid == self.steamid or buyorder.isSpelled:
-    #         return False
-    #     if buyorder.currencies > users_price:
-    #         return True
-    #     return False
-
-    # def _build_buyorder_data(
-    #     self,
-    #     item_name: str,
-    #     users_price: CurrencyValue,
-    #     top_competitor_buyorder: SnapshotBPListing | None,
-    # ) -> BuyorderData:
-    #     outbid = False
-    #     if top_competitor_buyorder:
-    #         outbid = users_price < top_competitor_buyorder.currencies
-    #     buyorder_data = BuyorderData(
-    #         steamid=self.steamid,
-    #         outbid_by=None,
-    #         name=item_name,
-    #         users_price=users_price,
-    #         top_competitor_price=top_competitor_buyorder,
-    #         outbid=outbid,
-    #     )
-    #     if outbid and top_competitor_buyorder:
-    #         buyorder_data.outbid_by = top_competitor_buyorder.steamid
-    #     return buyorder_data
