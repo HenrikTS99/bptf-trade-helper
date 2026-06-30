@@ -19,7 +19,7 @@ async def get_stored_buyorder_states(
     db: AsyncSession, only_beaten: bool = False
 ) -> list[models.BuyorderState]:
     stmt = select(models.BuyorderState).options(
-        joinedload(models.BuyorderState.listing)
+        joinedload(models.BuyorderState.listing).joinedload(models.Listing.item)
     )
     if only_beaten:
         stmt = stmt.where(models.BuyorderState.is_outbid == only_beaten)
