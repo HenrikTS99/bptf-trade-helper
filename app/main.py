@@ -5,7 +5,8 @@ from fastapi import FastAPI
 from app.db.base import Base, engine
 from app.scheduler import scheduler, init_scheduler
 from app.dependencies import bp, scanner
-from app.routers import api
+from app.routers import api, views
+from fastapi.staticfiles import StaticFiles
 
 
 @asynccontextmanager
@@ -20,4 +21,9 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(lifespan=lifespan)
+
+# Register routes
 app.include_router(api.router)
+app.include_router(views.router)
+
+app.mount("/static", StaticFiles(directory="app/static"), name="static")
