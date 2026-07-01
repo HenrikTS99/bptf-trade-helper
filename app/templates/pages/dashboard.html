@@ -1,4 +1,42 @@
 {% extends "base.html" %}
 {% block content %}
 <h1> helo </h1>
+
+<table class="striped">
+    <thead>
+        <tr>
+            <th>Item</th>
+            <th>My Price</th>
+            <th>Top competitor</th>
+            <th>Status</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for bo in beaten_buyorders %}
+        <tr>
+            <td><a href="{{bo.listing.item_url}}" target="_blank">{{ bo.item_name }}</a></td>
+            <td>{{ bo.user_keys }} keys {% if bo.user_metal %} {{ bo.user_metal }} ref{% endif %}</td>
+            <td>{{ bo.top_competitor_keys }} keys {% if bo.top_competitor_metal %}{{ bo.top_competitor_metal }} ref{% endif %}</td>
+            <!-- <td>{{ "Outbid" if bo.is_outbid else "Top" }}</td> -->
+
+            <td>
+                {% set key_diff = (bo.top_competitor_keys - bo.user_keys) | abs %}
+                {% set metal_diff = (bo.top_competitor_metal - bo.user_metal) | abs %}
+                {% if key_diff == 0 and metal_diff == 0 %}
+                    Equal
+                {% else %}
+                    {{"Outbid by" if bo.is_outbid else "Highest by"}}
+                    {% if key_diff != 0 %}{{key_diff}} Keys{% endif %}
+                    {% if metal_diff != 0 %}{{metal_diff | round(2)}}ref {% endif %}
+                {% endif %}
+            </td>
+            <td>
+                <button class="contrast">Beat by 1 key</button>
+                <button class="secondary">Round up 5 key</button>
+                <button class="outline">Round up 10 key</button>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
 {% endblock %}
