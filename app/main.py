@@ -8,6 +8,10 @@ from app.dependencies import bp, scanner
 from app.routers import api, views
 from fastapi.staticfiles import StaticFiles
 
+import logging
+
+logging.basicConfig(level=logging.INFO)
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
