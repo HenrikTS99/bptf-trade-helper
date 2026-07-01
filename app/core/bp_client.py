@@ -45,7 +45,7 @@ class BackpackTFClient:
         def parse(data):
             return SnapshotBPListing.from_api(data, sku)
 
-        logger.info("fetching snapshot for item:%s", sku)
+        logger.debug("fetching snapshot for item:%s", sku)
 
         params = {"key": self.api_key, "appid": 440, "sku": sku}
         listings, _ = await self._fetch_listings(
