@@ -15,9 +15,12 @@ class CurrencyValue(BaseModel):
             return my_keys > other_keys
         return (self.metal or 0) > (other.metal or 0)
 
+    def __ge__(self, other: "CurrencyValue") -> bool:
+        return self == other or self > other
+
 
 class ItemData(BaseModel):
-    defindex: int
+    defindex: int | None
     name: str
     baseName: str
     quality: str
@@ -50,7 +53,7 @@ class BPListing(BaseModel):
             currencies=CurrencyValue(**data.get("currencies", {})),
             details=data.get("details"),
             item=ItemData(
-                defindex=item.get("defindex", ""),
+                defindex=item.get("defindex", None),
                 name=item.get("name", ""),
                 baseName=item.get("baseName", ""),
                 quality=item.get("quality", {}).get("name", ""),
