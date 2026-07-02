@@ -36,12 +36,12 @@ async def _update_buyorder_data(
     db: AsyncSession, scanner: Scanner, order: models.Listing
 ) -> str:
     try:
-        buyorders = await scanner._fetch_item_buyorders(order.item.name)
+        buyorders = await scanner.fetch_item_buyorders(order.item.name)
     except BackpackTFError as e:
         logger.warning("Failed to fetch snapshot for %s: %s", order.item.name, e)
         return "skipped"
     try:
-        users_price = scanner._resolve_users_price(buyorders)
+        users_price = scanner.resolve_users_price(buyorders)
     except BuyorderError as e:
         logger.warning(
             "No buyorder found for %s, skipping. Error: %s", order.item.name, e
@@ -49,7 +49,7 @@ async def _update_buyorder_data(
         order.status = "inactive"
         await db.commit()
         return "skipped"
-    top_competitor_buyorder = scanner._get_highest_competitor_buyorder(buyorders)
+    top_competitor_buyorder = scanner.get_highest_competitor_buyorder(buyorders)
     _, status = await _update_buyorder_state(
         db, order, users_price, top_competitor_buyorder
     )
