@@ -4,7 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.db.base import get_db
 from app.models.enums import Intent
 from app.services.listing_service import sync_listings
-from app.crud import get_stored_buyorder_states, get_stored_listings
+from app.crud import get_stored_buyorder_states, get_stored_listings, get_listing
 from app.models.responses import ListingResponse, BuyorderStateResponse
 from app.dependencies import bp
 
@@ -53,3 +53,8 @@ async def snapshot(
     raw: bool = Query(default=False),
 ):
     return await bp.get_snapshot(sku, intent=intent, raw=raw)
+
+
+@router.get("/listings/{id}")
+async def get_listing_by_id(id: str, db: AsyncSession = Depends(get_db)):
+    return await get_listing(db, id)

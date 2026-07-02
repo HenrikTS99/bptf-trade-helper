@@ -25,3 +25,13 @@ async def get_stored_buyorder_states(
         stmt = stmt.where(models.BuyorderState.is_outbid == only_beaten)
     result = await db.execute(stmt)
     return result.scalars().all()
+
+
+async def get_listing(db: AsyncSession, id: str) -> models.Listing | None:
+    stmt = (
+        select(models.Listing)
+        .options(joinedload(models.Listing.item))
+        .where(models.Listing.id == id)
+    )
+    result = await db.execute(stmt)
+    return result.scalars().first()
