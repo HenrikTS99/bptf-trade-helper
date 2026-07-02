@@ -43,10 +43,6 @@ async def round_listing_price(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Listing with ID {listing_id} does not exist",
         )
-    if listing.status != "active":
-        raise HTTPException(
-            status_code=409, detail=f"Listing with ID {listing_id} is not 'active'"
-        )
     updated_listing = await update_listing_price(db, listing, rounding_strategy, bp)
     if not updated_listing:
         raise HTTPException(
