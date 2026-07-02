@@ -1,11 +1,19 @@
-from fastapi import APIRouter, Request, Depends
+from fastapi import APIRouter, Request, Depends, HTTPException, Query, status
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 
 from sqlalchemy.ext.asyncio import AsyncSession
+from app.services.listing_service import (
+    update_listing_price,
+    update_buyorder_price,
+)
 
 from app.crud import get_stored_buyorder_states
 from app.db.base import get_db
+from app.crud import get_listing
+from app.dependencies import bp
+
+from app.models.enums import RoundingMethod
 
 router = APIRouter()
 
@@ -19,4 +27,40 @@ async def display_dashboard(request: Request, db: AsyncSession = Depends(get_db)
         request=request,
         name="pages/dashboard.html",
         context={"beaten_buyorders": beaten_buyorders},
+    )
+
+
+@router.patch("/listings/{listing_id}/round-price")
+async def round_listing_price(
+    request: Request,
+    listing_id: str,
+    rounding_strategy: RoundingMethod = Query(default=RoundingMethod.UP_1_KEY),
+    db: AsyncSession = Depends(get_db),
+):
+    listing = await get_listing(db, listing_id)
+    if not listing:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Listing with ID {listing_id} does not exist",
+        )
+    if listing.status != "active":
+        raise HTTPException(
+            status_code=409, detail=f"Listing with ID {listing_id} is not 'active'"
+        )
+    updated_listing = await update_listing_price(db, listing, rounding_strategy, bp)
+    if not updated_listing:
+        raise HTTPException(
+            status_code=409,
+            detail=f"Update to listing price for Listing with ID {listing_id} failed.",
+        )
+    updated_buyorder_state = await update_buyorder_price(db, updated_listing)
+    if not updated_buyorder_state:
+        raise HTTPException(
+            status_code=409,
+            detail=f"Update to buyorder state for Listing with ID {listing_id} failed.",
+        )
+    return templates.TemplateResponse(
+        request=request,
+        name="partials/buyorder_row.html",
+        context={"bo": updated_buyorder_state},
     )

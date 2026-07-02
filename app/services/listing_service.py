@@ -1,11 +1,11 @@
 import logging
-
+import math
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-
+from app.models.enums import RoundingMethod
 from app.core.bp_client import BackpackTFClient
 from app.db import models
-from app.models.listings import BPListing, ItemData
+from app.models.listings import BPListing, ItemData, CurrencyValue
 
 logger = logging.getLogger(__name__)
 
@@ -72,13 +72,10 @@ async def _get_or_create_item(db: AsyncSession, item_data: ItemData) -> models.I
     return item
 
 
-async def _upsert_listing(db: AsyncSession, listing: BPListing, item_id: int) -> None:
-    result = await db.execute(
-        select(models.Listing).where(models.Listing.id == listing.id)
-    )
-    # Give first column of first row, no rows returns None
-    existing = result.scalar_one_or_none()
-
+async def _upsert_listing(
+    db: AsyncSession, listing: BPListing, item_id: int
+) -> models.Listing | None:
+    existing = await db.get(models.Listing, listing.id)
     if existing:
         if (
             existing.keys != listing.currencies.keys
@@ -88,18 +85,83 @@ async def _upsert_listing(db: AsyncSession, listing: BPListing, item_id: int) ->
             existing.metal = listing.currencies.metal
             existing.status = listing.status
             logger.info("Currency updated for listing for item: %s", listing.item.name)
+        return existing
+
+    new_listing = models.Listing(
+        id=listing.id,
+        steamid=listing.steamid,
+        intent=listing.intent,
+        status=listing.status,
+        keys=listing.currencies.keys,
+        metal=listing.currencies.metal,
+        item_id=item_id,
+        item_url=listing.item_url,
+    )
+    db.add(new_listing)
+    logger.info("listing created for item: %s", listing.item.name)
+    return new_listing
+
+
+async def update_listing_price(
+    db: AsyncSession,
+    listing: models.Listing,
+    rounding_strategy: str,
+    bp: BackpackTFClient,
+) -> models.Listing | None:
+    highest_buyorder_value = await get_top_competitor_price(db, listing.id)
+    if not highest_buyorder_value:
+        return None
+
+    keys = int(highest_buyorder_value.keys or 0)
+    # TODO: very important to not have mistakes here, make tests for this.
+    if rounding_strategy == RoundingMethod.UP_1_KEY:
+        keys += 1
+    elif rounding_strategy == RoundingMethod.NEAREST_5_KEY:
+        keys = math.ceil((keys + 1) / 5) * 5
+    elif rounding_strategy == RoundingMethod.NEAREST_10_KEY:
+        keys = math.ceil((keys + 1) / 10) * 10
+
+    res_listing = await bp.patch_listing_price(listing.id, keys=keys, metal=0)
+
+    item = await _get_or_create_item(db, res_listing.item)
+    # Update and get the listing
+    updated_listing = await _upsert_listing(db, res_listing, item.id)
+    await db.commit()
+    await db.refresh(updated_listing)
+    return updated_listing
+
+
+async def get_top_competitor_price(
+    db: AsyncSession, listing_id: str
+) -> CurrencyValue | None:
+    buyorder_state = await db.get(models.BuyorderState, listing_id)
+    if not buyorder_state:
+        return None
+    return CurrencyValue(
+        keys=buyorder_state.top_competitor_keys,
+        metal=buyorder_state.top_competitor_metal,
+    )
+
+
+async def update_buyorder_price(
+    db: AsyncSession, listing: models.Listing
+) -> models.BuyorderState | None:
+    buyorder_state = await db.get(models.BuyorderState, listing.id)
+    if not buyorder_state:
         return
 
-    db.add(
-        models.Listing(
-            id=listing.id,
-            steamid=listing.steamid,
-            intent=listing.intent,
-            status=listing.status,
-            keys=listing.currencies.keys,
-            metal=listing.currencies.metal,
-            item_id=item_id,
-            item_url=listing.item_url,
-        )
-    )
-    logger.info("listing created for item: %s", listing.item.name)
+    buyorder_state.user_keys = listing.keys
+    buyorder_state.user_metal = listing.metal
+    if CurrencyValue(
+        keys=buyorder_state.user_keys, metal=buyorder_state.user_metal
+    ) >= CurrencyValue(
+        keys=buyorder_state.top_competitor_keys,
+        metal=buyorder_state.top_competitor_metal,
+    ):
+        buyorder_state.is_outbid = False
+        buyorder_state.outbid_by = None
+
+    buyorder_state = await db.merge(buyorder_state)
+    await db.commit()
+    logger.debug("Updated buyorder state for buyorder for item %s", listing.item.name)
+    return buyorder_state

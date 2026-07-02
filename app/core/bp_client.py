@@ -39,6 +39,19 @@ class BackpackTFClient:
             raw=raw,
         )
 
+    async def patch_listing_price(
+        self, listing_id: str, keys: int, metal: float
+    ) -> BPListing:
+        body = {
+            "currencies": {"metal": metal, "keys": keys},
+        }
+        response = await self._patch(
+            f"/v2/classifieds/listings/{listing_id}", body=body
+        )
+        listing = BPListing.from_api(response)
+        logger.debug("Patched listing for item %s", listing.item)
+        return listing
+
     async def get_snapshot(
         self, sku: str, intent: str | None = None, raw: bool = False
     ) -> list[SnapshotBPListing]:
@@ -91,3 +104,15 @@ class BackpackTFClient:
                 raise BackpackTFError(f"HTTP {e.response.status_code}")
         logger.error("Rate limited after %d retries on %s", len(retry_delays), path)
         raise RateLimitedError(f"Rate limited after {len(retry_delays)} retries")
+
+    async def _patch(self, path: str, body: dict):
+        headers = {"X-Auth-Token": self.token}
+        try:
+            res = await self.client.patch(path, json=body, headers=headers)
+            res.raise_for_status()
+            logger.debug("PATCH %s returned %d", path, res.status_code)
+            return res.json()
+        except httpx.TimeoutException:
+            raise BackpackTFError("Request timed out")
+        except httpx.HTTPStatusError as e:
+            raise BackpackTFError(f"HTTP {e.response.status_code}")
