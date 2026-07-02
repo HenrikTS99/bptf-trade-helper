@@ -12,7 +12,7 @@ async def get_stored_listings(
     if intent:
         stmt = stmt.where(models.Listing.intent == intent)
     result = await db.execute(stmt)
-    return result.scalars().all()
+    return list(result.scalars().all())
 
 
 async def get_stored_buyorder_states(
@@ -24,14 +24,16 @@ async def get_stored_buyorder_states(
     if only_beaten:
         stmt = stmt.where(models.BuyorderState.is_outbid == only_beaten)
     result = await db.execute(stmt)
-    return result.scalars().all()
+    return list(result.scalars().all())
 
 
-async def get_listing(db: AsyncSession, id: str) -> models.Listing | None:
+async def get_listing(
+    db: AsyncSession, id: str, status: str = "active"
+) -> models.Listing | None:
     stmt = (
         select(models.Listing)
         .options(joinedload(models.Listing.item))
-        .where(models.Listing.id == id)
+        .where(models.Listing.id == id, models.Listing.status == status)
     )
     result = await db.execute(stmt)
     return result.scalars().first()

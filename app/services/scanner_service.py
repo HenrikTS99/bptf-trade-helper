@@ -2,6 +2,7 @@ import asyncio
 import logging
 
 from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.core.bp_client import BackpackTFError
 from app.core.scanner import BuyorderError, Scanner
 from app.crud import get_stored_listings
@@ -45,6 +46,8 @@ async def _update_buyorder_data(
         logger.warning(
             "No buyorder found for %s, skipping. Error: %s", order.item.name, e
         )
+        order.status = "inactive"
+        await db.commit()
         return "skipped"
     top_competitor_buyorder = scanner._get_highest_competitor_buyorder(buyorders)
     _, status = await _update_buyorder_state(
@@ -72,7 +75,12 @@ async def _update_buyorder_state(
         user_metal=users_price.metal,
     )
     if top_competitor_buyorder:
-        buyorder_state.top_competitor_keys = top_competitor_buyorder.currencies.keys
+        buyorder_state.top_competitor_keys = (
+            int(top_competitor_buyorder.currencies.keys)
+            if top_competitor_buyorder.currencies.keys
+            else 0
+        )
+
         buyorder_state.top_competitor_metal = top_competitor_buyorder.currencies.metal
 
         buyorder_state.outbid_by = top_competitor_buyorder.steamid

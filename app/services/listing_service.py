@@ -81,7 +81,9 @@ async def _upsert_listing(
             existing.keys != listing.currencies.keys
             or existing.metal != listing.currencies.metal
         ):
-            existing.keys = listing.currencies.keys
+            existing.keys = (
+                int(listing.currencies.keys) if listing.currencies.keys else 0
+            )
             existing.metal = listing.currencies.metal
             existing.status = listing.status
             logger.info("Currency updated for listing for item: %s", listing.item.name)
