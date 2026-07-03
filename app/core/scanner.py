@@ -46,6 +46,9 @@ class Scanner:
     ) -> SnapshotBPListing | None:
         lowest = None
         for order in sellorders:
+            # Ignore items listed in dollars (marketplace.tf)
+            if order.currencies.keys == 0 and order.currencies.metal == 0:
+                continue
             if lowest is None or order.currencies < lowest.currencies:
                 lowest = order
         return lowest
