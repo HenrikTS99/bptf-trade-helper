@@ -59,8 +59,9 @@ async def refresh_buyorder_state(listing_id: str, db: AsyncSession = Depends(get
             detail=f"Could not resolve buyorder state for {listing_id}. "
             f"Reason: {status}",
         )
-    # load listing relationship for pydantic serialization
-    await db.refresh(buyorder_state, ["listing"])
+    # refresh all attributes after commit inside update_buyorder_data to prevent MissingGreenlet on serialization
+    await db.refresh(buyorder_state)
+    await db.refresh(buyorder_state, ["listing"])  # load relationship
     return buyorder_state
 
 

@@ -55,6 +55,8 @@ async def round_listing_price(
             status_code=409,
             detail=f"Update to buyorder state for Listing with ID {listing_id} failed.",
         )
+    # Refresh required after merge/commit to avoid MissingGreenlet error (accessing expired attributes cause error)
+    await db.refresh(updated_buyorder_state)
     return templates.TemplateResponse(
         request=request,
         name="partials/buyorder_row.html",
