@@ -36,10 +36,12 @@ async def _update_buyorder_data(
     db: AsyncSession, scanner: Scanner, order: models.Listing
 ) -> str:
     try:
-        buyorders = await scanner.fetch_item_buyorders(order.item.name)
+        item_listings = await scanner.fetch_item_listings(order.item.name)
     except BackpackTFError as e:
         logger.warning("Failed to fetch snapshot for %s: %s", order.item.name, e)
         return "skipped"
+    buyorders = [listing for listing in item_listings if listing.intent == "buy"]
+    sellorders = [listing for listing in item_listings if listing.intent == "sell"]
     try:
         users_price = scanner.resolve_users_price(buyorders)
     except BuyorderError as e:
@@ -50,8 +52,10 @@ async def _update_buyorder_data(
         await db.commit()
         return "skipped"
     top_competitor_buyorder = scanner.get_highest_competitor_buyorder(buyorders)
+    lowest_sellorder = scanner.get_lowest_sellorder(sellorders)
+    lowest_currency = lowest_sellorder.currencies if lowest_sellorder else None
     _, status = await _update_buyorder_state(
-        db, order, users_price, top_competitor_buyorder
+        db, order, users_price, top_competitor_buyorder, lowest_currency
     )
     return status
 
@@ -61,6 +65,7 @@ async def _update_buyorder_state(
     listing: models.Listing,
     users_price: CurrencyValue,
     top_competitor_buyorder: SnapshotBPListing | None,
+    lowest_seller_currency: CurrencyValue | None,
 ) -> tuple[models.BuyorderState, str]:
     old_buyorder_state = await db.get(models.BuyorderState, listing.id)
     outbid = False
@@ -85,6 +90,11 @@ async def _update_buyorder_state(
 
         buyorder_state.outbid_by = top_competitor_buyorder.steamid
         buyorder_state.is_outbid = outbid
+    if lowest_seller_currency:
+        buyorder_state.lowest_seller_keys = (
+            int(lowest_seller_currency.keys) if lowest_seller_currency.keys else 0
+        )
+        buyorder_state.lowest_seller_metal = lowest_seller_currency.metal
 
     if old_buyorder_state:
         if _is_same_buyorder_state(old_buyorder_state, buyorder_state):

@@ -56,6 +56,8 @@ class BuyorderState(Base):
     top_competitor_metal: Mapped[float | None]
     outbid_by: Mapped[str | None]
     is_outbid: Mapped[bool] = mapped_column(default=False)
+    lowest_seller_keys: Mapped[int | None]
+    lowest_seller_metal: Mapped[float | None]
     first_seen: Mapped[datetime] = mapped_column(server_default=func.now())
     last_updated: Mapped[datetime] = mapped_column(
         server_default=func.now(), onupdate=func.now()

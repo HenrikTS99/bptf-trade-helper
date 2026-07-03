@@ -20,10 +20,9 @@ class Scanner:
         # TODO: get user steamid
         self.steamid = "76561198061440669"
 
-    async def fetch_item_buyorders(self, item_name: str) -> list[SnapshotBPListing]:
+    async def fetch_item_listings(self, item_name: str) -> list[SnapshotBPListing]:
         item_listings = await self.bp.get_snapshot(item_name)
-        buyorders = [listing for listing in item_listings if listing.intent == "buy"]
-        return buyorders
+        return item_listings
 
     def resolve_users_price(self, buyorders: list[SnapshotBPListing]) -> CurrencyValue:
         users_buyorder = next((b for b in buyorders if b.steamid == self.steamid), None)
@@ -41,3 +40,12 @@ class Scanner:
             if highest is None or order.currencies > highest.currencies:
                 highest = order
         return highest
+
+    def get_lowest_sellorder(
+        self, sellorders: list[SnapshotBPListing]
+    ) -> SnapshotBPListing | None:
+        lowest = None
+        for order in sellorders:
+            if lowest is None or order.currencies < lowest.currencies:
+                lowest = order
+        return lowest

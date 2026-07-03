@@ -3,7 +3,14 @@
   <td>{{ bo.user_keys }} keys {% if bo.user_metal %} {{ bo.user_metal }} ref{% endif %}</td>
   <td>{{ bo.top_competitor_keys }} keys {% if bo.top_competitor_metal %}{{ bo.top_competitor_metal }} ref{% endif %}
   </td>
-  <td>N/A</td>
+  <td>
+  {% if bo.lowest_seller_keys or bo.lowest_seller_metal %}
+      {% if bo.lowest_seller_keys %}{{ bo.lowest_seller_keys }} keys{% endif %}
+      {% if bo.lowest_seller_metal %}{{ bo.lowest_seller_metal }} ref{% endif %}
+  {% else %}
+  N/A
+  {% endif %}
+  </td>
   <!-- <td>{{ "Outbid" if bo.is_outbid else "Top" }}</td> -->
 
   <td class="{{ 'outbid' if bo.is_outbid else 'winning' }}">
@@ -28,5 +35,25 @@
     <button class="outline" hx-patch="/listings/{{bo.listing.id}}/round-price?rounding_strategy=nearest_10-key"
       hx-target="#row-{{bo.listing.id}}" hx-swap="outerHTML">
       Round up 10 key</button>
+  <details style="margin-top: 0.5rem; font-size: 0.75rem;">
+    <summary></summary>
+    <pre>
+        listing_id: {{ bo.listing_id }}
+        steamid: {{ bo.steamid }}
+        item_name: {{ bo.item_name }}
+        user_keys: {{ bo.user_keys }}
+        user_metal: {{ bo.user_metal }}
+        top_competitor_keys: {{ bo.top_competitor_keys }}
+        top_competitor_metal: {{ bo.top_competitor_metal }}
+        outbid_by: {{ bo.outbid_by }}
+        is_outbid: {{ bo.is_outbid }}
+        lowest_seller_keys: {{ bo.lowest_seller_keys }}
+        lowest_seller_metal: {{ bo.lowest_seller_metal }}
+        first_seen: {{ bo.first_seen }}
+        last_updated: {{ bo.last_updated }}
+    </pre>
+  </details>
   </td>
+  
+
 </tr>
