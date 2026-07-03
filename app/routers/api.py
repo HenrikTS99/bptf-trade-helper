@@ -1,12 +1,13 @@
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.base import get_db
 from app.models.enums import Intent
 from app.services.listing_service import sync_listings
+from app.services.scanner_service import update_buyorder_data
 from app.crud import get_stored_buyorder_states, get_stored_listings, get_listing
 from app.models.responses import ListingResponse, BuyorderStateResponse
-from app.dependencies import bp
+from app.dependencies import bp, scanner
 
 router = APIRouter()
 
@@ -36,6 +37,31 @@ async def stored_buyorder_states(
     db: AsyncSession = Depends(get_db),
 ):
     return await get_stored_buyorder_states(db, only_beaten=only_beaten)
+
+
+@router.post(
+    "/buyorder_states/{listing_id}/refresh", response_model=BuyorderStateResponse
+)
+async def refresh_buyorder_state(listing_id: str, db: AsyncSession = Depends(get_db)):
+    listing = await get_listing(db, listing_id)
+
+    if not listing:
+        raise HTTPException(status_code=404, detail="Listing not found")
+    if listing.intent != Intent.buy:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Listing {listing_id} is a sell order, not a buy order",
+        )
+    buyorder_state, status = await update_buyorder_data(db, scanner, listing)
+    if not buyorder_state:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Could not resolve buyorder state for {listing_id}. "
+            f"Reason: {status}",
+        )
+    # load listing relationship for pydantic serialization
+    await db.refresh(buyorder_state, ["listing"])
+    return buyorder_state
 
 
 @router.get("/buyorder_states/total_buyorders_outbid")

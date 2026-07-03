@@ -19,7 +19,7 @@ async def refresh_buyorder_states(db: AsyncSession, scanner: Scanner) -> None:
     listings = await get_stored_listings(db, intent="buy")
     counts: dict[str, int] = {"new": 0, "updated": 0, "unchanged": 0, "skipped": 0}
     for listing in listings:
-        status = await _update_buyorder_data(db, scanner, listing)
+        _, status = await update_buyorder_data(db, scanner, listing)
         counts[status] += 1
         await asyncio.sleep(1)  # for rate limiter
     logger.info(
@@ -32,14 +32,14 @@ async def refresh_buyorder_states(db: AsyncSession, scanner: Scanner) -> None:
     )
 
 
-async def _update_buyorder_data(
+async def update_buyorder_data(
     db: AsyncSession, scanner: Scanner, order: models.Listing
-) -> str:
+) -> tuple[models.BuyorderState | None, str]:
     try:
         item_listings = await scanner.fetch_item_listings(order.item.name)
     except BackpackTFError as e:
         logger.warning("Failed to fetch snapshot for %s: %s", order.item.name, e)
-        return "skipped"
+        return None, "skipped"
     buyorders = [listing for listing in item_listings if listing.intent == "buy"]
     sellorders = [listing for listing in item_listings if listing.intent == "sell"]
     try:
@@ -50,14 +50,14 @@ async def _update_buyorder_data(
         )
         order.status = "inactive"
         await db.commit()
-        return "skipped"
+        return None, "skipped"
     top_competitor_buyorder = scanner.get_highest_competitor_buyorder(buyorders)
     lowest_sellorder = scanner.get_lowest_sellorder(sellorders)
     lowest_currency = lowest_sellorder.currencies if lowest_sellorder else None
-    _, status = await _update_buyorder_state(
+    buyorder_state, status = await _update_buyorder_state(
         db, order, users_price, top_competitor_buyorder, lowest_currency
     )
-    return status
+    return buyorder_state, status
 
 
 async def _update_buyorder_state(
@@ -68,10 +68,7 @@ async def _update_buyorder_state(
     lowest_seller_currency: CurrencyValue | None,
 ) -> tuple[models.BuyorderState, str]:
     old_buyorder_state = await db.get(models.BuyorderState, listing.id)
-    outbid = False
 
-    if top_competitor_buyorder:
-        outbid = users_price < top_competitor_buyorder.currencies
     buyorder_state = models.BuyorderState(
         listing_id=listing.id,
         steamid=listing.steamid,
@@ -80,26 +77,28 @@ async def _update_buyorder_state(
         user_metal=users_price.metal,
     )
     if top_competitor_buyorder:
+        buyorder_state.is_outbid = users_price < top_competitor_buyorder.currencies
         buyorder_state.top_competitor_keys = (
             int(top_competitor_buyorder.currencies.keys)
             if top_competitor_buyorder.currencies.keys
             else 0
         )
-
         buyorder_state.top_competitor_metal = top_competitor_buyorder.currencies.metal
 
         buyorder_state.outbid_by = top_competitor_buyorder.steamid
-        buyorder_state.is_outbid = outbid
+
     if lowest_seller_currency:
         buyorder_state.lowest_seller_keys = (
             int(lowest_seller_currency.keys) if lowest_seller_currency.keys else 0
         )
         buyorder_state.lowest_seller_metal = lowest_seller_currency.metal
 
-    if old_buyorder_state:
-        if _is_same_buyorder_state(old_buyorder_state, buyorder_state):
-            logger.debug("No change in buyorder state for item %s", listing.item.name)
-            return old_buyorder_state, "unchanged"
+    if old_buyorder_state and _is_same_buyorder_state(
+        old_buyorder_state, buyorder_state
+    ):
+        logger.debug("No change in buyorder state for item %s", listing.item.name)
+        return old_buyorder_state, "unchanged"
+
     buyorder_state = await db.merge(buyorder_state)
     await db.commit()
     if old_buyorder_state:
@@ -122,4 +121,6 @@ def _is_same_buyorder_state(
         == buyorder_state.top_competitor_metal
         and old_buyorder_state.is_outbid == buyorder_state.is_outbid
         and old_buyorder_state.outbid_by == buyorder_state.outbid_by
+        and old_buyorder_state.lowest_seller_keys == buyorder_state.lowest_seller_keys
+        and old_buyorder_state.lowest_seller_metal == buyorder_state.lowest_seller_metal
     )
