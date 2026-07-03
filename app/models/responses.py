@@ -34,6 +34,8 @@ class BuyorderStateResponse(BaseModel):
     top_competitor_metal: float | None
     outbid_by: str | None
     is_outbid: bool
+    lowest_seller_keys: int | None
+    lowest_seller_metal: float | None
     first_seen: datetime
     last_updated: datetime
 
