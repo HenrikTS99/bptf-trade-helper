@@ -21,12 +21,16 @@ templates = Jinja2Templates(directory="app/templates")
 
 
 @router.get("/", response_class=HTMLResponse)
-async def display_dashboard(request: Request, db: AsyncSession = Depends(get_db)):
-    beaten_buyorders = await get_stored_buyorder_states(db, only_beaten=False)
+async def display_dashboard(
+    request: Request,
+    only_beaten: bool = Query(default=False),
+    db: AsyncSession = Depends(get_db),
+):
+    buyorders = await get_stored_buyorder_states(db, only_beaten=only_beaten)
     return templates.TemplateResponse(
         request=request,
         name="pages/dashboard.html",
-        context={"beaten_buyorders": beaten_buyorders},
+        context={"beaten_buyorders": buyorders, "only_beaten": only_beaten},
     )
 
 

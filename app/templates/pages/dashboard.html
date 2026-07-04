@@ -1,7 +1,13 @@
 {% extends "base.html" %}
 {% block content %}
-<h1> helo </h1>
-
+    <input type="checkbox" 
+        hx-get="/?only_beaten=True"
+        hx-target="#main"
+        hx-swap="outerHTML"
+        hx-trigger="change"
+        hx-vals='js:{"only_beaten": event.target.checked}'
+        {% if only_beaten %} checked {% endif %}/>
+    Only Beaten
 <table class="striped">
     <thead>
         <tr>
