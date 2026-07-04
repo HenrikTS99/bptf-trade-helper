@@ -1,7 +1,10 @@
 from fastapi import APIRouter, Request, Depends, HTTPException, Query, status
+from app.scheduler import scheduler
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
+from app.core.sync_tracker import sync_tracker
 
+from datetime import datetime
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.services.listing_service import (
     update_listing_price,
@@ -30,7 +33,11 @@ async def display_dashboard(
     return templates.TemplateResponse(
         request=request,
         name="pages/dashboard.html",
-        context={"beaten_buyorders": buyorders, "only_beaten": only_beaten},
+        context={
+            "beaten_buyorders": buyorders,
+            "only_beaten": only_beaten,
+            "tracker": sync_tracker,
+        },
     )
 
 
@@ -65,4 +72,25 @@ async def round_listing_price(
         request=request,
         name="partials/buyorder_row.html",
         context={"bo": updated_buyorder_state},
+    )
+
+
+@router.post("/buyorder_states/refresh", response_class=HTMLResponse)
+async def update_buyorder_states(request: Request):
+    if not sync_tracker.is_syncing:
+        scheduler.modify_job("run_scheduled_sync", next_run_time=datetime.now())
+        sync_tracker.start()
+    return templates.TemplateResponse(
+        request=request,
+        name="partials/sync_status.html",
+        context={"tracker": sync_tracker},
+    )
+
+
+@router.get("/sync-status", response_class=HTMLResponse)
+async def sync_status(request: Request):
+    return templates.TemplateResponse(
+        request=request,
+        name="partials/sync_status.html",
+        context={"tracker": sync_tracker},
     )

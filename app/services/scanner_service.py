@@ -2,8 +2,8 @@ import asyncio
 import logging
 
 from sqlalchemy.ext.asyncio import AsyncSession
-
-from app.core.bp_client import BackpackTFError
+from app.core.sync_tracker import SyncTracker
+from app.core.bp_client import BackpackTFError, BackpackTFClient
 from app.core.scanner import BuyorderError, Scanner
 from app.crud import get_stored_listings
 from app.db import models
@@ -11,16 +11,22 @@ from app.models.listings import (
     CurrencyValue,
     SnapshotBPListing,
 )
+from app.services.listing_service import sync_listings
 
 logger = logging.getLogger(__name__)
 
 
-async def refresh_buyorder_states(db: AsyncSession, scanner: Scanner) -> None:
+async def refresh_buyorder_states(
+    db: AsyncSession, scanner: Scanner, tracker: SyncTracker
+) -> None:
     listings = await get_stored_listings(db, intent="buy")
+    tracker.total = len(listings)
+    tracker.update_progress(0, len(listings))
     counts: dict[str, int] = {"new": 0, "updated": 0, "unchanged": 0, "skipped": 0}
-    for listing in listings:
+    for i, listing in enumerate(listings):
         _, status = await update_buyorder_data(db, scanner, listing)
         counts[status] += 1
+        tracker.update_progress(i + 1, len(listings))
         await asyncio.sleep(1)  # for rate limiter
     logger.info(
         "Scanned %d buyorders: %d new, %d updated, %d unchanged, %d skipped",
@@ -124,3 +130,11 @@ def _is_same_buyorder_state(
         and old_buyorder_state.lowest_seller_keys == buyorder_state.lowest_seller_keys
         and old_buyorder_state.lowest_seller_metal == buyorder_state.lowest_seller_metal
     )
+
+
+async def sync_and_scan(
+    db: AsyncSession, bp: BackpackTFClient, scanner: Scanner, tracker: SyncTracker
+):
+    listings = await sync_listings(db, bp, sync_all=True)
+    logger.info("Synced %d listings", len(listings))
+    await refresh_buyorder_states(db, scanner, tracker)

@@ -1,0 +1,17 @@
+{% if tracker.is_syncing %}
+<div id="sync-area" hx-get="/sync-status" hx-trigger="every 2s" hx-swap="outerHTML">
+  <progress value="{{ tracker.current }}" max="{{ tracker.total }}"></progress>
+  <small>{{ tracker.message }}</small>
+</div>
+{% else %}
+<div id="sync-area">
+  <button hx-post="/buyorder_states/refresh" hx-target="#sync-area" hx-swap="outerHTML">
+    Force update
+  </button>
+  {% if tracker.phase.value == "completed" %}
+  <small>{{ tracker.message }}</small>
+  {% elif tracker.phase.value == "failed" %}
+  <small style="color: var(--pico-color-red)">{{ tracker.message }}</small>
+  {% endif %}
+</div>
+{% endif %}
