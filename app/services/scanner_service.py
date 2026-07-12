@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import copy
 
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.sync_tracker import SyncTracker
@@ -66,6 +67,30 @@ async def update_buyorder_data(
     return buyorder_state, status
 
 
+def _apply_buyorder_values(
+    state: models.BuyorderState,
+    users_price: CurrencyValue,
+    top_competitor_buyorder: SnapshotBPListing | None,
+    lowest_seller_currency: CurrencyValue | None,
+):
+    state.user_keys = int(users_price.keys) if users_price.keys else 0
+    state.user_metal = users_price.metal
+    if top_competitor_buyorder:
+        state.is_outbid = users_price < top_competitor_buyorder.currencies
+        state.top_competitor_keys = (
+            int(top_competitor_buyorder.currencies.keys)
+            if top_competitor_buyorder.currencies.keys
+            else 0
+        )
+        state.top_competitor_metal = top_competitor_buyorder.currencies.metal
+        state.outbid_by = top_competitor_buyorder.steamid
+    if lowest_seller_currency:
+        state.lowest_seller_keys = (
+            int(lowest_seller_currency.keys) if lowest_seller_currency.keys else 0
+        )
+        state.lowest_seller_metal = lowest_seller_currency.metal
+
+
 async def _update_buyorder_state(
     db: AsyncSession,
     listing: models.Listing,
@@ -75,42 +100,39 @@ async def _update_buyorder_state(
 ) -> tuple[models.BuyorderState, str]:
     old_buyorder_state = await db.get(models.BuyorderState, listing.id)
 
+    if old_buyorder_state:
+        old_copy = copy.deepcopy(
+            old_buyorder_state
+        )  # preserve old buyorderState before merge
+        _apply_buyorder_values(
+            old_buyorder_state,
+            users_price,
+            top_competitor_buyorder,
+            lowest_seller_currency,
+        )
+        if old_copy.is_same_as(old_buyorder_state):
+            logger.debug("No change in buyorder state for item v%s", listing.item.name)
+            return old_buyorder_state, "unchanged"
+        await db.commit()
+        await save_buyorder_state_history(db, old_copy, old_buyorder_state)
+        logger.debug(
+            "Updated buyorder state for buyorder for item %s", listing.item.name
+        )
+        return old_buyorder_state, "updated"
+
     buyorder_state = models.BuyorderState(
         listing_id=listing.id,
         steamid=listing.steamid,
         item_name=listing.item.name,
-        user_keys=users_price.keys,
-        user_metal=users_price.metal,
     )
-    if top_competitor_buyorder:
-        buyorder_state.is_outbid = users_price < top_competitor_buyorder.currencies
-        buyorder_state.top_competitor_keys = (
-            int(top_competitor_buyorder.currencies.keys)
-            if top_competitor_buyorder.currencies.keys
-            else 0
-        )
-        buyorder_state.top_competitor_metal = top_competitor_buyorder.currencies.metal
-
-        buyorder_state.outbid_by = top_competitor_buyorder.steamid
-
-    if lowest_seller_currency:
-        buyorder_state.lowest_seller_keys = (
-            int(lowest_seller_currency.keys) if lowest_seller_currency.keys else 0
-        )
-        buyorder_state.lowest_seller_metal = lowest_seller_currency.metal
-
-    if old_buyorder_state and old_buyorder_state.is_same_as(buyorder_state):
-        logger.debug("No change in buyorder state for item %s", listing.item.name)
-        return old_buyorder_state, "unchanged"
-
-    buyorder_state = await db.merge(buyorder_state)
+    _apply_buyorder_values(
+        buyorder_state,
+        users_price,
+        top_competitor_buyorder,
+        lowest_seller_currency,
+    )
+    db.add(buyorder_state)
     await db.commit()
-    if old_buyorder_state:
-        logger.debug(
-            "Updated buyorder state for buyorder for item %s", listing.item.name
-        )
-        await save_buyorder_state_history(db, old_buyorder_state, buyorder_state)
-        return buyorder_state, "updated"
     logger.debug("New buyorder state for item %s", listing.item.name)
     return buyorder_state, "new"
 
