@@ -2,11 +2,21 @@ from fastapi import APIRouter, Depends, Query, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.base import get_db
+from app.db.models import BuyorderStateHistory
 from app.models.enums import Intent
 from app.services.listing_service import sync_listings
 from app.services.scanner_service import update_buyorder_data
-from app.crud import get_stored_buyorder_states, get_stored_listings, get_listing
-from app.models.responses import ListingResponse, BuyorderStateResponse
+from app.crud import (
+    get_stored_buyorder_states,
+    get_stored_listings,
+    get_listing,
+    get_stored_buyorder_state_histories,
+)
+from app.models.responses import (
+    BuyorderStateHistoryResponse,
+    ListingResponse,
+    BuyorderStateResponse,
+)
 from app.dependencies import bp, scanner
 
 router = APIRouter()
@@ -22,6 +32,20 @@ async def listings(
     intent: Intent | None = Query(default=None), db: AsyncSession = Depends(get_db)
 ):
     return await get_stored_listings(db, intent=intent)
+
+
+@router.get("/listings/item")
+async def snapshot(
+    sku: str,
+    intent: Intent | None = Query(default=None),
+    raw: bool = Query(default=False),
+):
+    return await bp.get_snapshot(sku, intent=intent, raw=raw)
+
+
+@router.get("/listings/{id}")
+async def get_listing_by_id(id: str, db: AsyncSession = Depends(get_db)):
+    return await get_listing(db, id)
 
 
 @router.get("/listings/sync")
@@ -73,15 +97,10 @@ async def total_buyorders_outbid(
     return len(buyorder_states)
 
 
-@router.get("/listings/item")
-async def snapshot(
-    sku: str,
-    intent: Intent | None = Query(default=None),
-    raw: bool = Query(default=False),
+@router.get(
+    "/buyorder_state_histories", response_model=list[BuyorderStateHistoryResponse]
+)
+async def stored_buyorder_state_histories(
+    db: AsyncSession = Depends(get_db),
 ):
-    return await bp.get_snapshot(sku, intent=intent, raw=raw)
-
-
-@router.get("/listings/{id}")
-async def get_listing_by_id(id: str, db: AsyncSession = Depends(get_db)):
-    return await get_listing(db, id)
+    return await get_stored_buyorder_state_histories(db)
