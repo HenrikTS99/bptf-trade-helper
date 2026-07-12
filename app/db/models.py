@@ -73,7 +73,6 @@ class BuyorderState(Base):
             and self.top_competitor_keys == other.top_competitor_keys
             and self.top_competitor_metal == other.top_competitor_metal
             and self.is_outbid == other.is_outbid
-            and self.outbid_by == other.outbid_by
             and self.lowest_seller_keys == other.lowest_seller_keys
             and self.lowest_seller_metal == other.lowest_seller_metal
         )
@@ -109,4 +108,3 @@ class BuyorderStateHistory(Base):
     competitor_price_changed: Mapped[bool] = mapped_column(default=False)
     price_updated_changed: Mapped[bool] = mapped_column(default=False)
     lowest_seller_changed: Mapped[bool] = mapped_column(default=False)
-
