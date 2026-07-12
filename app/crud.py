@@ -30,6 +30,64 @@ async def get_stored_buyorder_states(
     return list(result.scalars().all())
 
 
+async def get_stored_buyorder_state_histories(
+    db: AsyncSession,
+) -> list[models.BuyorderStateHistory]:
+    stmt = select(models.BuyorderStateHistory).options(
+        joinedload(models.BuyorderStateHistory.listing).joinedload(models.Listing.item)
+    )
+    result = await db.execute(stmt)
+    return list(result.scalars().all())
+
+
+async def save_buyorder_state_history(
+    db: AsyncSession,
+    old_buyorder_state: models.BuyorderState,
+    new_buyorder_state: models.BuyorderState,
+):
+    buyorder_state_history = models.BuyorderStateHistory(
+        listing_id=new_buyorder_state.listing_id,
+        old_user_keys=old_buyorder_state.user_keys,
+        old_user_metal=old_buyorder_state.user_metal,
+        old_top_competitor_keys=old_buyorder_state.top_competitor_keys,
+        old_top_competitor_metal=old_buyorder_state.top_competitor_metal,
+        old_is_outbid=old_buyorder_state.is_outbid,
+        old_lowest_seller_keys=old_buyorder_state.lowest_seller_keys,
+        old_lowest_seller_metal=old_buyorder_state.lowest_seller_metal,
+        new_user_keys=new_buyorder_state.user_keys,
+        new_user_metal=new_buyorder_state.user_metal,
+        new_top_competitor_keys=new_buyorder_state.top_competitor_keys,
+        new_top_competitor_metal=new_buyorder_state.top_competitor_metal,
+        new_is_outbid=new_buyorder_state.is_outbid,
+        new_lowest_seller_keys=new_buyorder_state.lowest_seller_keys,
+        new_lowest_seller_metal=new_buyorder_state.lowest_seller_metal,
+        # change types
+        outbid_changed=old_buyorder_state.is_outbid != new_buyorder_state.is_outbid,
+    )
+    if (old_buyorder_state.is_outbid) and (not new_buyorder_state.is_outbid):
+        buyorder_state_history.regained_top_changed = True
+    if (
+        old_buyorder_state.top_competitor_keys != new_buyorder_state.top_competitor_keys
+    ) or (
+        old_buyorder_state.top_competitor_metal
+        != new_buyorder_state.top_competitor_metal
+    ):
+        buyorder_state_history.competitor_price_changed = True
+    if (old_buyorder_state.user_keys != new_buyorder_state.user_keys) or (
+        old_buyorder_state.user_metal != new_buyorder_state.user_metal
+    ):
+        buyorder_state_history.price_updated_changed = True
+
+    if (
+        old_buyorder_state.lowest_seller_keys != new_buyorder_state.lowest_seller_keys
+    ) or (
+        old_buyorder_state.lowest_seller_metal != new_buyorder_state.lowest_seller_metal
+    ):
+        buyorder_state_history.lowest_seller_changed = True
+    db.add(buyorder_state_history)
+    await db.commit()
+
+
 async def get_listing(
     db: AsyncSession, id: str, status: str = "active"
 ) -> models.Listing | None:

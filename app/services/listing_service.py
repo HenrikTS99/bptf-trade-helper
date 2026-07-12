@@ -1,12 +1,13 @@
 import logging
 import math
-from sqlalchemy import select
+import copy
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.enums import RoundingMethod
 from app.core.bp_client import BackpackTFClient
 from app.db import models
 from app.models.listings import BPListing, CurrencyValue
 from app.crud import get_or_create_item, upsert_listing
+from app.crud import save_buyorder_state_history
 
 logger = logging.getLogger(__name__)
 
@@ -95,7 +96,7 @@ async def update_buyorder_price(
     buyorder_state = await db.get(models.BuyorderState, listing.id)
     if not buyorder_state:
         return
-
+    old_buyorder_state = copy.deepcopy(buyorder_state)
     buyorder_state.user_keys = listing.keys
     buyorder_state.user_metal = listing.metal
     if CurrencyValue(
@@ -107,7 +108,11 @@ async def update_buyorder_price(
         buyorder_state.is_outbid = False
         buyorder_state.outbid_by = None
 
+    if old_buyorder_state.is_same_as(buyorder_state):
+        return old_buyorder_state
     buyorder_state = await db.merge(buyorder_state)
+
+    await save_buyorder_state_history(db, old_buyorder_state, buyorder_state)
     await db.commit()
     logger.debug("Updated buyorder state for buyorder for item %s", listing.item.name)
     return buyorder_state

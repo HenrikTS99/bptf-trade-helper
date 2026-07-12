@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.sync_tracker import SyncTracker
 from app.core.bp_client import BackpackTFError, BackpackTFClient
 from app.core.scanner import BuyorderError, Scanner
-from app.crud import get_stored_listings
+from app.crud import get_stored_listings, save_buyorder_state_history
 from app.db import models
 from app.models.listings import (
     CurrencyValue,
@@ -99,9 +99,7 @@ async def _update_buyorder_state(
         )
         buyorder_state.lowest_seller_metal = lowest_seller_currency.metal
 
-    if old_buyorder_state and _is_same_buyorder_state(
-        old_buyorder_state, buyorder_state
-    ):
+    if old_buyorder_state and old_buyorder_state.is_same_as(buyorder_state):
         logger.debug("No change in buyorder state for item %s", listing.item.name)
         return old_buyorder_state, "unchanged"
 
@@ -111,25 +109,10 @@ async def _update_buyorder_state(
         logger.debug(
             "Updated buyorder state for buyorder for item %s", listing.item.name
         )
+        await save_buyorder_state_history(db, old_buyorder_state, buyorder_state)
         return buyorder_state, "updated"
     logger.debug("New buyorder state for item %s", listing.item.name)
     return buyorder_state, "new"
-
-
-def _is_same_buyorder_state(
-    old_buyorder_state: models.BuyorderState, buyorder_state: models.BuyorderState
-):
-    return (
-        old_buyorder_state.user_keys == buyorder_state.user_keys
-        and old_buyorder_state.user_metal == buyorder_state.user_metal
-        and old_buyorder_state.top_competitor_keys == buyorder_state.top_competitor_keys
-        and old_buyorder_state.top_competitor_metal
-        == buyorder_state.top_competitor_metal
-        and old_buyorder_state.is_outbid == buyorder_state.is_outbid
-        and old_buyorder_state.outbid_by == buyorder_state.outbid_by
-        and old_buyorder_state.lowest_seller_keys == buyorder_state.lowest_seller_keys
-        and old_buyorder_state.lowest_seller_metal == buyorder_state.lowest_seller_metal
-    )
 
 
 async def sync_and_scan(
