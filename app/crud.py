@@ -33,8 +33,14 @@ async def get_stored_buyorder_states(
 async def get_stored_buyorder_state_histories(
     db: AsyncSession,
 ) -> list[models.BuyorderStateHistory]:
-    stmt = select(models.BuyorderStateHistory).options(
-        joinedload(models.BuyorderStateHistory.listing).joinedload(models.Listing.item)
+    stmt = (
+        select(models.BuyorderStateHistory)
+        .options(
+            joinedload(models.BuyorderStateHistory.listing).joinedload(
+                models.Listing.item
+            )
+        )
+        .order_by(models.BuyorderStateHistory.changed_at.desc())
     )
     result = await db.execute(stmt)
     return list(result.scalars().all())
@@ -85,7 +91,6 @@ async def save_buyorder_state_history(
     ):
         buyorder_state_history.lowest_seller_changed = True
     db.add(buyorder_state_history)
-    await db.commit()
 
 
 async def get_listing(
