@@ -1,0 +1,33 @@
+<tr id=row-{{bo_history.id}}>
+  <td><a href="{{bo_history.listing.item_url}}" target="_blank">{{ bo_history.listing.item.name }}</a></td>
+  <td>{{bo_history.changed_at}}</td>
+
+  <td>
+    {% if bo_history.price_updated_changed %}
+    {{ bo_history.old_user_keys }} → {{ bo_history.new_user_keys }} keys
+    {% if bo_history.new_user_metal %} ({{ bo_history.old_user_metal }} → {{ bo_history.new_user_metal }} ref){% endif
+    %}
+    {% else %}{% endif %}
+  </td>
+  <td>
+    {% if bo_history.competitor_price_changed %}
+    {{ bo_history.old_top_competitor_keys }} → {{ bo_history.new_top_competitor_keys }} keys
+    {% if bo_history.new_top_competitor_metal %} ({{ bo_history.old_top_competitor_metal }} → {{
+    bo_history.new_top_competitor_metal }} ref){% endif %}
+    {% else %}{% endif %}
+  </td>
+  <td>
+    {% if bo_history.lowest_seller_changed %}
+    {% if bo_history.old_lowest_seller_keys or bo_history.old_lowest_seller_metal %}
+    {{ bo_history.old_lowest_seller_keys or '—' }} → {{ bo_history.new_lowest_seller_keys or '—' }} keys
+    {% else %}— → {{ bo_history.new_lowest_seller_keys or '—' }} keys{% endif %}
+    {% else %}{% endif %}
+  </td>
+  <td>
+    {% if bo_history.outbid_changed and bo_history.new_is_outbid %} Now outbid! {% endif %}
+    {% if bo_history.regained_top_changed %} Regained top! {% endif %}
+    {% if bo_history.competitor_price_changed %} Competitor changed! {% endif %}
+    {% if bo_history.price_updated_changed %} Price changed! {% endif %}
+    {% if bo_history.lowest_seller_changed %} Seller changed! {% endif %}
+  </td>
+</tr>

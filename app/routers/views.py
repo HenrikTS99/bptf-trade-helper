@@ -11,7 +11,7 @@ from app.services.listing_service import (
     update_buyorder_price,
 )
 
-from app.crud import get_stored_buyorder_states
+from app.crud import get_stored_buyorder_state_histories, get_stored_buyorder_states
 from app.db.base import get_db
 from app.crud import get_listing
 from app.dependencies import bp
@@ -37,6 +37,21 @@ async def display_dashboard(
             "beaten_buyorders": buyorders,
             "only_beaten": only_beaten,
             "tracker": sync_tracker,
+        },
+    )
+
+
+@router.get("/history", response_class=HTMLResponse)
+async def display_history(
+    request: Request,
+    db: AsyncSession = Depends(get_db),
+):
+    buyorder_state_histories = await get_stored_buyorder_state_histories(db)
+    return templates.TemplateResponse(
+        request=request,
+        name="pages/buyorder_state_history.html",
+        context={
+            "buyorder_state_histories": buyorder_state_histories,
         },
     )
 

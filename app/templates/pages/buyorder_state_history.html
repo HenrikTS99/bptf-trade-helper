@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block content %}
+<table class="striped">
+  <thead>
+    <tr>
+      <th>Item</th>
+      <th>Date</th>
+      <th>My Price</th>
+      <th>Competitor</th>
+      <th>Seller</th>
+      <th>Status</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for bo_history in buyorder_state_histories %}
+    {% include "partials/history_row.html" %}
+    {% endfor %}
+  </tbody>
+  {% endblock %}
