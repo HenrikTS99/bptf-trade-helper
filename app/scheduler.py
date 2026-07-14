@@ -1,12 +1,11 @@
 import logging
 import time
-from datetime import datetime
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
+from app.core.sync_tracker import sync_tracker
 from app.db.base import AsyncSessionLocal
 from app.services.scanner_service import sync_and_scan
-from app.core.sync_tracker import sync_tracker
 
 scheduler = AsyncIOScheduler()
 
@@ -19,7 +18,6 @@ def init_scheduler(bp, scanner) -> AsyncIOScheduler:
         _run_scheduled_sync,
         trigger="interval",
         minutes=15,
-        # next_run_time=datetime.now(),
         id="run_scheduled_sync",
         kwargs={"bp": bp, "scanner": scanner},
     )

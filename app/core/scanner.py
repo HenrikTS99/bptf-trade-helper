@@ -35,7 +35,7 @@ class Scanner:
     ) -> SnapshotBPListing | None:
         highest = None
         for order in buyorders:
-            if order.steamid == self.steamid or order.isSpelled:
+            if order.steamid == self.steamid or order.is_spelled:
                 continue
             if highest is None or order.currencies > highest.currencies:
                 highest = order

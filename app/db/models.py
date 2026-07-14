@@ -26,12 +26,12 @@ class Listing(Base):
 
     item_id: Mapped[int] = mapped_column(ForeignKey("items.id"))
     item_url: Mapped[str]
-    item: Mapped["Item"] = relationship(back_populates="listings")
+    item: Mapped[Item] = relationship(back_populates="listings")
 
-    buyorder_states: Mapped[list["BuyorderState"]] = relationship(
+    buyorder_states: Mapped[list[BuyorderState]] = relationship(
         back_populates="listing"
     )
-    buyorder_state_history: Mapped[list["BuyorderStateHistory"]] = relationship(
+    buyorder_state_history: Mapped[list[BuyorderStateHistory]] = relationship(
         back_populates="listing"
     )
 
@@ -44,13 +44,13 @@ class Item(Base):
     name: Mapped[str]
     quality: Mapped[str]
     particle: Mapped[str | None]
-    listings: Mapped[list["Listing"]] = relationship(back_populates="item")
+    listings: Mapped[list[Listing]] = relationship(back_populates="item")
 
 
 class BuyorderState(Base):
     __tablename__ = "buyorder_states"
     listing_id: Mapped[str] = mapped_column(ForeignKey("listings.id"), primary_key=True)
-    listing: Mapped["Listing"] = relationship(back_populates="buyorder_states")
+    listing: Mapped[Listing] = relationship(back_populates="buyorder_states")
     steamid: Mapped[str]
     item_name: Mapped[str]
     user_keys: Mapped[int | None] = mapped_column(default=0)
@@ -66,7 +66,7 @@ class BuyorderState(Base):
         server_default=func.now(), onupdate=func.now()
     )
 
-    def is_same_as(self, other: "BuyorderState") -> bool:
+    def is_same_as(self, other: BuyorderState) -> bool:
         return (
             self.user_keys == other.user_keys
             and self.user_metal == other.user_metal
@@ -82,7 +82,7 @@ class BuyorderStateHistory(Base):
     __tablename__ = "buyorder_state_history"
     id: Mapped[int] = mapped_column(primary_key=True)
     listing_id: Mapped[str] = mapped_column(ForeignKey("listings.id"))
-    listing: Mapped["Listing"] = relationship(back_populates="buyorder_state_history")
+    listing: Mapped[Listing] = relationship(back_populates="buyorder_state_history")
     changed_at: Mapped[datetime] = mapped_column(
         server_default=func.now(), onupdate=func.now()
     )

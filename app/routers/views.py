@@ -1,22 +1,24 @@
-from fastapi import APIRouter, Request, Depends, HTTPException, Query, status
-from app.scheduler import scheduler
+from datetime import datetime
+
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
-from app.core.sync_tracker import sync_tracker
-
-from datetime import datetime
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.services.listing_service import (
-    update_listing_price,
-    update_buyorder_price,
+
+from app.core.sync_tracker import sync_tracker
+from app.crud import (
+    get_listing,
+    get_stored_buyorder_state_histories,
+    get_stored_buyorder_states,
 )
-
-from app.crud import get_stored_buyorder_state_histories, get_stored_buyorder_states
 from app.db.base import get_db
-from app.crud import get_listing
 from app.dependencies import bp
-
 from app.models.enums import RoundingMethod
+from app.scheduler import scheduler
+from app.services.listing_service import (
+    update_buyorder_price,
+    update_listing_price,
+)
 
 router = APIRouter()
 
@@ -81,7 +83,8 @@ async def round_listing_price(
             status_code=409,
             detail=f"Update to buyorder state for Listing with ID {listing_id} failed.",
         )
-    # Refresh required after merge/commit to avoid MissingGreenlet error (accessing expired attributes cause error)
+    # Refresh required after merge/commit to avoid MissingGreenlet error
+    # (accessing expired attributes cause error)
     await db.refresh(updated_buyorder_state)
     return templates.TemplateResponse(
         request=request,

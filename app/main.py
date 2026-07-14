@@ -1,14 +1,13 @@
+import logging
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
-
-from app.db.base import Base, engine
-from app.scheduler import scheduler, init_scheduler
-from app.dependencies import bp, scanner
-from app.routers import api, views
 from fastapi.staticfiles import StaticFiles
 
-import logging
+from app.db.base import Base, engine
+from app.dependencies import bp, scanner
+from app.routers import api, views
+from app.scheduler import init_scheduler, scheduler
 
 logging.basicConfig(level=logging.INFO)
 

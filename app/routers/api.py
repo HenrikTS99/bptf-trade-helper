@@ -1,23 +1,22 @@
-from fastapi import APIRouter, Depends, Query, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.db.base import get_db
-from app.db.models import BuyorderStateHistory
-from app.models.enums import Intent
-from app.services.listing_service import sync_listings
-from app.services.scanner_service import update_buyorder_data
 from app.crud import (
-    get_stored_buyorder_states,
-    get_stored_listings,
     get_listing,
     get_stored_buyorder_state_histories,
+    get_stored_buyorder_states,
+    get_stored_listings,
 )
+from app.db.base import get_db
+from app.dependencies import bp, scanner
+from app.models.enums import Intent
 from app.models.responses import (
     BuyorderStateHistoryResponse,
-    ListingResponse,
     BuyorderStateResponse,
+    ListingResponse,
 )
-from app.dependencies import bp, scanner
+from app.services.listing_service import sync_listings
+from app.services.scanner_service import update_buyorder_data
 
 router = APIRouter()
 
@@ -83,7 +82,8 @@ async def refresh_buyorder_state(listing_id: str, db: AsyncSession = Depends(get
             detail=f"Could not resolve buyorder state for {listing_id}. "
             f"Reason: {status}",
         )
-    # refresh all attributes after commit inside update_buyorder_data to prevent MissingGreenlet on serialization
+    # refresh all attributes after commit inside update_buyorder_data
+    # to prevent MissingGreenlet on serialization
     await db.refresh(buyorder_state)
     await db.refresh(buyorder_state, ["listing"])  # load relationship
     return buyorder_state

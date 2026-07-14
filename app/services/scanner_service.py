@@ -1,11 +1,12 @@
 import asyncio
-import logging
 import copy
+import logging
 
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.core.sync_tracker import SyncTracker
-from app.core.bp_client import BackpackTFError, BackpackTFClient
+
+from app.core.bp_client import BackpackTFClient, BackpackTFError
 from app.core.scanner import BuyorderError, Scanner
+from app.core.sync_tracker import SyncTracker
 from app.crud import get_stored_listings, save_buyorder_state_history
 from app.db import models
 from app.models.listings import (

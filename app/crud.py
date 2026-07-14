@@ -1,9 +1,11 @@
+import logging
+
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
-import logging
-from app.models.listings import ItemData, BPListing
+
 from app.db import models
+from app.models.listings import BPListing, ItemData
 
 logger = logging.getLogger(__name__)
 

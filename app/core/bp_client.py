@@ -98,10 +98,10 @@ class BackpackTFClient:
                 res.raise_for_status()
                 logger.debug("GET %s returned %d", path, res.status_code)
                 return res.json()
-            except httpx.TimeoutException:
-                raise BackpackTFError("Request timed out")
+            except httpx.TimeoutException as e:
+                raise BackpackTFError("Request timed out") from e
             except httpx.HTTPStatusError as e:
-                raise BackpackTFError(f"HTTP {e.response.status_code}")
+                raise BackpackTFError(f"HTTP {e.response.status_code}") from e
         logger.error("Rate limited after %d retries on %s", len(retry_delays), path)
         raise RateLimitedError(f"Rate limited after {len(retry_delays)} retries")
 
@@ -112,7 +112,7 @@ class BackpackTFClient:
             res.raise_for_status()
             logger.debug("PATCH %s returned %d", path, res.status_code)
             return res.json()
-        except httpx.TimeoutException:
-            raise BackpackTFError("Request timed out")
+        except httpx.TimeoutException as e:
+            raise BackpackTFError("Request timed out") from e
         except httpx.HTTPStatusError as e:
-            raise BackpackTFError(f"HTTP {e.response.status_code}")
+            raise BackpackTFError(f"HTTP {e.response.status_code}") from e
