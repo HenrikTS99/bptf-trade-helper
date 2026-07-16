@@ -34,6 +34,9 @@ class Listing(Base):
     buyorder_state_history: Mapped[list[BuyorderStateHistory]] = relationship(
         back_populates="listing"
     )
+    sellorder_states: Mapped[list[SellorderState]] = relationship(
+        back_populates="listing"
+    )
 
 
 class Item(Base):
@@ -45,6 +48,37 @@ class Item(Base):
     quality: Mapped[str]
     particle: Mapped[str | None]
     listings: Mapped[list[Listing]] = relationship(back_populates="item")
+
+
+class SellorderState(Base):
+    __tablename__ = "sellorder_states"
+    listing_id: Mapped[str] = mapped_column(ForeignKey("listings.id"), primary_key=True)
+    listing: Mapped[Listing] = relationship(back_populates="sellorder_states")
+    steamid: Mapped[str]
+    item_name: Mapped[str]
+    user_keys: Mapped[int | None] = mapped_column(default=0)
+    user_metal: Mapped[float | None] = mapped_column(default=0.0)
+    lowest_competitor_keys: Mapped[int | None]
+    lowest_competitor_metal: Mapped[float | None]
+    undercut_by: Mapped[str | None]
+    is_undercut: Mapped[bool] = mapped_column(default=False)
+    highest_buyer_keys: Mapped[int | None]
+    highest_buyer_metal: Mapped[float | None]
+    first_seen: Mapped[datetime] = mapped_column(server_default=func.now())
+    last_updated: Mapped[datetime] = mapped_column(
+        server_default=func.now(), onupdate=func.now()
+    )
+
+    def is_same_as(self, other: SellorderState) -> bool:
+        return (
+            self.user_keys == other.user_keys
+            and self.user_metal == other.user_metal
+            and self.lowest_competitor_keys == other.lowest_competitor_keys
+            and self.lowest_competitor_metal == other.lowest_competitor_metal
+            and self.is_undercut == other.is_undercut
+            and self.highest_buyer_keys == other.highest_buyer_keys
+            and self.highest_buyer_metal == other.highest_buyer_metal
+        )
 
 
 class BuyorderState(Base):

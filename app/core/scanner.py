@@ -24,11 +24,13 @@ class Scanner:
         item_listings = await self.bp.get_snapshot(item_name)
         return item_listings
 
-    def resolve_users_price(self, buyorders: list[SnapshotBPListing]) -> CurrencyValue:
-        users_buyorder = next((b for b in buyorders if b.steamid == self.steamid), None)
-        if not users_buyorder:
+    def resolve_users_price(self, orders: list[SnapshotBPListing]) -> CurrencyValue:
+        users_order = next(
+            (listing for listing in orders if listing.steamid == self.steamid), None
+        )
+        if not users_order:
             raise BuyorderError("users buyorder not found")
-        return users_buyorder.currencies
+        return users_order.currencies
 
     def get_highest_competitor_buyorder(
         self, buyorders: list[SnapshotBPListing]
@@ -40,6 +42,32 @@ class Scanner:
             if highest is None or order.currencies > highest.currencies:
                 highest = order
         return highest
+
+    def get_highest_buyorder(
+        self, buyorders: list[SnapshotBPListing]
+    ) -> SnapshotBPListing | None:
+        highest = None
+        for order in buyorders:
+            # Ignore items listed in dollars (marketplace.tf)
+            if order.currencies.keys == 0 and order.currencies.metal == 0:
+                continue
+            if highest is None or order.currencies > highest.currencies:
+                highest = order
+        return highest
+
+    def get_lowest_competitor_sellorder(
+        self, sellorders: list[SnapshotBPListing]
+    ) -> SnapshotBPListing | None:
+        lowest = None
+        for order in sellorders:
+            # Ignore items listed in dollars (marketplace.tf)
+            if order.currencies.keys == 0 and order.currencies.metal == 0:
+                continue
+            if order.steamid == self.steamid or order.is_spelled:
+                continue
+            if lowest is None or order.currencies < lowest.currencies:
+                lowest = order
+        return lowest
 
     def get_lowest_sellorder(
         self, sellorders: list[SnapshotBPListing]

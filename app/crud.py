@@ -95,6 +95,18 @@ async def save_buyorder_state_history(
     db.add(buyorder_state_history)
 
 
+async def get_stored_sellorder_states(
+    db: AsyncSession, only_beaten: bool = False
+) -> list[models.SellorderState]:
+    stmt = select(models.SellorderState).options(
+        joinedload(models.SellorderState.listing).joinedload(models.Listing.item)
+    )
+    if only_beaten:
+        stmt = stmt.where(models.SellorderState.is_undercut == only_beaten)
+    result = await db.execute(stmt)
+    return list(result.scalars().all())
+
+
 async def get_listing(
     db: AsyncSession, id: str, status: str = "active"
 ) -> models.Listing | None:
