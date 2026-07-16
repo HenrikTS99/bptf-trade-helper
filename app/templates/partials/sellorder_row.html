@@ -1,0 +1,48 @@
+<tr id=row-{{so.listing.id}}>
+  <td><a href="{{so.listing.item_url}}" target="_blank">{{ so.item_name }}</a></td>
+  <td>{{ so.user_keys }} keys {% if so.user_metal %} {{ so.user_metal }} ref{% endif %}</td>
+  <td>
+      {% if so.lowest_competitor_keys %}{{ so.lowest_competitor_keys }} keys {% endif %}
+      {% if so.lowest_competitor_metal %}{{ so.lowest_competitor_metal }} ref{% endif %}
+  </td>
+  <td>
+  {% if so.highest_buyer_keys or so.highest_buyer_metal %}
+      {% if so.highest_buyer_keys %}{{ so.highest_buyer_keys }} keys{% endif %}
+      {% if so.highest_buyer_metal %}{{ so.highest_buyer_metal }} ref{% endif %}
+  {% else %}
+  N/A
+  {% endif %}
+  </td>
+  <!-- <td>{{ "undercut" if so.is_undercut else "lowest" }}</td> -->
+
+  <td class="{{ 'outbid' if so.is_undercut else 'winning' }}">
+    {% if so.lowest_competitor_keys is not none and so.user_keys is not none %}
+        {% set key_diff = (so.lowest_competitor_keys - so.user_keys) | abs %}
+        {% set metal_diff = (so.lowest_competitor_metal - so.user_metal) | abs %}
+        {% if key_diff == 0 and metal_diff == 0 %}
+            Equal
+        {% else %}
+            {{"undercut by" if so.is_undercut else "Lowest by"}}
+            {% if key_diff != 0 %}{{key_diff}} Keys{% endif %}
+            {% if metal_diff != 0 %}{{metal_diff | round(2)}}ref {% endif %}
+        {% endif %}
+    {% else %}
+        N/A
+    {% endif %}
+  </td>
+  <!-- <td> -->
+  <!--   <button class="contrast" hx-patch="/listings/{{so.listing.id}}/round-price?rounding_strategy=up_1-key" -->
+  <!--     hx-target="#row-{{so.listing.id}}" hx-swap="outerHTML"> -->
+  <!--     Beat by 1 key -->
+  <!--   </button> -->
+  <!--   <button class="secondary" hx-patch="/listings/{{so.listing.id}}/round-price?rounding_strategy=nearest_5-key" -->
+  <!--     hx-target="#row-{{so.listing.id}}" hx-swap="outerHTML"> -->
+  <!--     Round up 5 key</button> -->
+  <!--   <button class="outline" hx-patch="/listings/{{so.listing.id}}/round-price?rounding_strategy=nearest_10-key" -->
+  <!--     hx-target="#row-{{so.listing.id}}" hx-swap="outerHTML"> -->
+  <!--     Round up 10 key</button> -->
+  <!---->
+  <!-- </td> -->
+  
+
+</tr>

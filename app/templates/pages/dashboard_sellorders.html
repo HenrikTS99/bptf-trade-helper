@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block content %}
+<div>
+    <label role="group">
+        <input type="checkbox" 
+            hx-get="/sellorders?only_beaten=True"
+            hx-target="#main"
+            hx-swap="outerHTML"
+            hx-trigger="change"
+            hx-vals='js:{"only_beaten": event.target.checked}'
+            {% if only_beaten %} checked {% endif %}/>
+        Only Beaten
+    </label>
+    {% include "partials/sync_status.html" %}
+</div>
+<table class="striped">
+    <thead>
+        <tr>
+            <th>Item</th>
+            <th>My Price</th>
+            <th>Lowest competitor</th>
+            <th>Highest Buyer</th>
+            <th>Status</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for so in beaten_sellorders %}
+            {% include "partials/sellorder_row.html" %}
+        {% endfor %}
+    </tbody>
+{% endblock %}

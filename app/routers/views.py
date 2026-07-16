@@ -10,6 +10,7 @@ from app.crud import (
     get_listing,
     get_stored_buyorder_state_histories,
     get_stored_buyorder_states,
+    get_stored_sellorder_states,
 )
 from app.db.base import get_db
 from app.dependencies import bp
@@ -37,6 +38,24 @@ async def display_dashboard(
         name="pages/dashboard.html",
         context={
             "beaten_buyorders": buyorders,
+            "only_beaten": only_beaten,
+            "tracker": sync_tracker,
+        },
+    )
+
+
+@router.get("/sellorders", response_class=HTMLResponse)
+async def display_dashboard_sellorders(
+    request: Request,
+    only_beaten: bool = Query(default=False),
+    db: AsyncSession = Depends(get_db),
+):
+    sellorders = await get_stored_sellorder_states(db, only_beaten=only_beaten)
+    return templates.TemplateResponse(
+        request=request,
+        name="pages/dashboard_sellorders.html",
+        context={
+            "beaten_sellorders": sellorders,
             "only_beaten": only_beaten,
             "tracker": sync_tracker,
         },
@@ -97,6 +116,18 @@ async def round_listing_price(
 async def update_buyorder_states(request: Request):
     if not sync_tracker.is_syncing:
         scheduler.modify_job("run_scheduled_sync", next_run_time=datetime.now())
+        sync_tracker.start()
+    return templates.TemplateResponse(
+        request=request,
+        name="partials/sync_status.html",
+        context={"tracker": sync_tracker},
+    )
+
+
+@router.post("/sellorder_states/refresh", response_class=HTMLResponse)
+async def update_sellorder_states(request: Request):
+    if not sync_tracker.is_syncing:
+        scheduler.modify_job("run_sellorder_sync", next_run_time=datetime.now())
         sync_tracker.start()
     return templates.TemplateResponse(
         request=request,

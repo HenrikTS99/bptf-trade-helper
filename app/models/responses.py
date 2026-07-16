@@ -69,3 +69,22 @@ class BuyorderStateHistoryResponse(BaseModel):
     competitor_price_changed: bool
     price_updated_changed: bool
     lowest_seller_changed: bool
+
+
+class SellorderStateResponse(BaseModel):
+    listing_id: str
+    listing: ListingResponse
+    steamid: str
+    item_name: str
+    user_keys: int | None
+    user_metal: float | None
+    lowest_competitor_keys: int | None
+    lowest_competitor_metal: float | None
+    undercut_by: str | None
+    is_undercut: bool
+    highest_buyer_keys: int | None
+    highest_buyer_metal: float | None
+    first_seen: datetime
+    last_updated: datetime
+
+    model_config = {"from_attributes": True}

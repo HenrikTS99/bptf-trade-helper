@@ -6,6 +6,7 @@ from app.crud import (
     get_stored_buyorder_state_histories,
     get_stored_buyorder_states,
     get_stored_listings,
+    get_stored_sellorder_states,
 )
 from app.db.base import get_db
 from app.dependencies import bp, scanner
@@ -14,6 +15,7 @@ from app.models.responses import (
     BuyorderStateHistoryResponse,
     BuyorderStateResponse,
     ListingResponse,
+    SellorderStateResponse,
 )
 from app.services.listing_service import sync_listings
 from app.services.scanner_service import update_buyorder_data
@@ -54,6 +56,7 @@ async def update_listings(
     return await sync_listings(db, bp, sync_all=True)
 
 
+# BuyorderStates
 @router.get("/buyorder_states", response_model=list[BuyorderStateResponse])
 async def stored_buyorder_states(
     only_beaten: bool = Query(default=False),
@@ -104,3 +107,12 @@ async def stored_buyorder_state_histories(
     db: AsyncSession = Depends(get_db),
 ):
     return await get_stored_buyorder_state_histories(db)
+
+
+# SellorderStates
+@router.get("/sellorder_states", response_model=list[SellorderStateResponse])
+async def stored_sellorder_states(
+    only_beaten: bool = Query(default=False),
+    db: AsyncSession = Depends(get_db),
+):
+    return await get_stored_sellorder_states(db, only_beaten=only_beaten)
