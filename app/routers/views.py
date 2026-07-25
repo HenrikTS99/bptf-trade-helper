@@ -14,11 +14,11 @@ from app.crud import (
 )
 from app.db.base import get_db
 from app.dependencies import bp
-from app.models.enums import RoundingMethod
+from app.models.enums import Intent, RoundingMethod
 from app.scheduler import scheduler
 from app.services.listing_service import (
-    update_buyorder_price,
     update_listing_price,
+    update_order_price,
 )
 
 router = APIRouter()
@@ -96,19 +96,25 @@ async def round_listing_price(
             status_code=409,
             detail=f"Update to listing price for Listing with ID {listing_id} failed.",
         )
-    updated_buyorder_state = await update_buyorder_price(db, updated_listing)
-    if not updated_buyorder_state:
+    updated_state = await update_order_price(db, updated_listing)
+    if listing.intent == Intent.buy:
+        template = "partials/buyorder_row.html"
+        context_key = "bo"
+    else:
+        template = "partials/sellorder_row.html"
+        context_key = "so"
+    if not updated_state:
         raise HTTPException(
             status_code=409,
-            detail=f"Update to buyorder state for Listing with ID {listing_id} failed.",
+            detail=f"Update to order state for Listing with ID {listing_id} failed.",
         )
     # Refresh required after merge/commit to avoid MissingGreenlet error
     # (accessing expired attributes cause error)
-    await db.refresh(updated_buyorder_state)
+    await db.refresh(updated_state)
     return templates.TemplateResponse(
         request=request,
-        name="partials/buyorder_row.html",
-        context={"bo": updated_buyorder_state},
+        name=template,
+        context={context_key: updated_state},
     )
 
 

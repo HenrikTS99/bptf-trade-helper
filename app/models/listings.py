@@ -2,6 +2,8 @@ from urllib.parse import urlencode
 
 from pydantic import BaseModel
 
+from app.models.enums import Intent
+
 
 class CurrencyValue(BaseModel):
     keys: float | None = 0  # Float due to validation errors
@@ -30,7 +32,7 @@ class ItemData(BaseModel):
 class BPListing(BaseModel):
     id: str
     steamid: str
-    intent: str
+    intent: Intent
     count: int
     status: str
     currencies: CurrencyValue
@@ -80,7 +82,7 @@ class BPListing(BaseModel):
 
 class SnapshotBPListing(BaseModel):
     steamid: str
-    intent: str
+    intent: Intent
     currencies: CurrencyValue
     details: str | None = None
     is_spelled: bool

@@ -30,19 +30,12 @@
         N/A
     {% endif %}
   </td>
-  <!-- <td> -->
-  <!--   <button class="contrast" hx-patch="/listings/{{so.listing.id}}/round-price?rounding_strategy=up_1-key" -->
-  <!--     hx-target="#row-{{so.listing.id}}" hx-swap="outerHTML"> -->
-  <!--     Beat by 1 key -->
-  <!--   </button> -->
-  <!--   <button class="secondary" hx-patch="/listings/{{so.listing.id}}/round-price?rounding_strategy=nearest_5-key" -->
-  <!--     hx-target="#row-{{so.listing.id}}" hx-swap="outerHTML"> -->
-  <!--     Round up 5 key</button> -->
-  <!--   <button class="outline" hx-patch="/listings/{{so.listing.id}}/round-price?rounding_strategy=nearest_10-key" -->
-  <!--     hx-target="#row-{{so.listing.id}}" hx-swap="outerHTML"> -->
-  <!--     Round up 10 key</button> -->
-  <!---->
-  <!-- </td> -->
-  
-
+  <td>
+    <button class="contrast" hx-patch="/listings/{{so.listing.id}}/round-price?rounding_strategy=down_1-key"
+      hx-target="#row-{{so.listing.id}}" hx-swap="outerHTML">
+      Beat by 1 key
+    </button>
+    <button class="secondary" hx-patch="/listings/{{so.listing.id}}/round-price?rounding_strategy=match_price"
+      hx-target="#row-{{so.listing.id}}" hx-swap="outerHTML">
+      Match price</button>
 </tr>

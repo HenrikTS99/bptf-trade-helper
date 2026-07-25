@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.bp_client import BackpackTFClient
 from app.crud import get_or_create_item, save_buyorder_state_history, upsert_listing
 from app.db import models
-from app.models.enums import RoundingMethod
+from app.models.enums import Intent, RoundingMethod
 from app.models.listings import BPListing, CurrencyValue
 
 logger = logging.getLogger(__name__)
@@ -56,20 +56,21 @@ async def update_listing_price(
     rounding_strategy: RoundingMethod,
     bp: BackpackTFClient,
 ) -> models.Listing | None:
-    highest_buyorder_value = await get_top_competitor_price(db, listing.id)
-    if not highest_buyorder_value:
+    competitor_price = await get_competitor_price(db, listing.id, listing.intent)
+    if not competitor_price:
         return None
 
-    keys = int(highest_buyorder_value.keys or 0)
-    # TODO: very important to not have mistakes here, make tests for this.
-    if rounding_strategy == RoundingMethod.UP_1_KEY:
-        keys += 1
-    elif rounding_strategy == RoundingMethod.NEAREST_5_KEY:
-        keys = math.ceil((keys + 1) / 5) * 5
-    elif rounding_strategy == RoundingMethod.NEAREST_10_KEY:
-        keys = math.ceil((keys + 1) / 10) * 10
-
-    res_listing = await bp.patch_listing_price(listing.id, keys=keys, metal=0)
+    new_listing_price = apply_rounding_strategy(
+        int(competitor_price.keys or 0),
+        competitor_price.metal or 0,
+        rounding_strategy,
+        competitor_price.metal,
+    )
+    if new_listing_price is None:
+        return None
+    res_listing = await bp.patch_listing_price(
+        listing.id, keys=new_listing_price.keys, metal=new_listing_price.metal
+    )
 
     item = await get_or_create_item(db, res_listing.item)
     # Update and get the listing
@@ -79,41 +80,94 @@ async def update_listing_price(
     return updated_listing
 
 
-async def get_top_competitor_price(
-    db: AsyncSession, listing_id: str
+def apply_rounding_strategy(
+    keys: int, metal: float, strategy: RoundingMethod, competitor_metal: float | None
 ) -> CurrencyValue | None:
-    buyorder_state = await db.get(models.BuyorderState, listing_id)
-    if not buyorder_state:
-        return None
-    return CurrencyValue(
-        keys=buyorder_state.top_competitor_keys,
-        metal=buyorder_state.top_competitor_metal,
-    )
+    # TODO: very important to not have mistakes here, make tests for this.
+    if strategy == RoundingMethod.UP_1_KEY:
+        keys += 1
+        metal = 0
+    elif strategy == RoundingMethod.NEAREST_5_KEY:
+        keys = math.ceil((keys + 1) / 5) * 5
+        metal = 0
+    elif strategy == RoundingMethod.NEAREST_10_KEY:
+        keys = math.ceil((keys + 1) / 10) * 10
+        metal = 0
+    elif strategy == RoundingMethod.DOWN_1_KEY:
+        if keys <= 0:
+            return None
+        # if competitor has no metal in buyorder, go down a key.
+        # If not, just remove metal.
+        if not competitor_metal or competitor_metal == 0:
+            keys -= 1
+        metal = 0
+    return CurrencyValue(keys=keys, metal=metal)
 
 
-async def update_buyorder_price(
+async def get_competitor_price(
+    db: AsyncSession, listing_id: str, intent: Intent
+) -> CurrencyValue | None:
+    if intent == Intent.buy:
+        buyorder_state = await db.get(models.BuyorderState, listing_id)
+        if not buyorder_state:
+            return None
+        return CurrencyValue(
+            keys=buyorder_state.top_competitor_keys,
+            metal=buyorder_state.top_competitor_metal,
+        )
+    elif intent == Intent.sell:
+        sellorder_state = await db.get(models.SellorderState, listing_id)
+        if not sellorder_state:
+            return None
+        return CurrencyValue(
+            keys=sellorder_state.lowest_competitor_keys,
+            metal=sellorder_state.lowest_competitor_metal,
+        )
+
+
+async def update_order_price(
     db: AsyncSession, listing: models.Listing
-) -> models.BuyorderState | None:
-    buyorder_state = await db.get(models.BuyorderState, listing.id)
-    if not buyorder_state:
-        return
-    old_buyorder_state = copy.deepcopy(buyorder_state)
-    buyorder_state.user_keys = listing.keys
-    buyorder_state.user_metal = listing.metal
-    if CurrencyValue(
-        keys=buyorder_state.user_keys, metal=buyorder_state.user_metal
-    ) >= CurrencyValue(
-        keys=buyorder_state.top_competitor_keys,
-        metal=buyorder_state.top_competitor_metal,
-    ):
-        buyorder_state.is_outbid = False
-        buyorder_state.outbid_by = None
+) -> models.BuyorderState | models.SellorderState | None:
+    if listing.intent == Intent.buy:
+        state = await db.get(models.BuyorderState, listing.id)
+    else:
+        state = await db.get(models.SellorderState, listing.id)
+    if not state:
+        return None
 
-    if old_buyorder_state.is_same_as(buyorder_state):
-        return old_buyorder_state
-    buyorder_state = await db.merge(buyorder_state)
+    old_state = copy.deepcopy(state)
+    state.user_keys = listing.keys
+    state.user_metal = listing.metal
 
-    await save_buyorder_state_history(db, old_buyorder_state, buyorder_state)
+    if listing.intent == Intent.buy:
+        assert isinstance(state, models.BuyorderState)  # to fix pyright issues
+        assert isinstance(old_state, models.BuyorderState)
+        if CurrencyValue(keys=state.user_keys, metal=state.user_metal) >= CurrencyValue(
+            keys=state.top_competitor_keys,
+            metal=state.top_competitor_metal,
+        ):
+            state.is_outbid = False
+            state.outbid_by = None
+        if old_state.is_same_as(state):
+            return old_state
+    else:
+        assert isinstance(state, models.SellorderState)
+        assert isinstance(old_state, models.SellorderState)
+        if CurrencyValue(keys=state.user_keys, metal=state.user_metal) <= CurrencyValue(
+            keys=state.lowest_competitor_keys, metal=state.lowest_competitor_metal
+        ):
+            state.is_undercut = False
+            state.undercut_by = None
+        # duplicate here in if statement to avoid pyright complaint
+        if old_state.is_same_as(state):
+            return old_state
+
+    state = await db.merge(state)
+
+    if listing.intent == Intent.buy:
+        assert isinstance(state, models.BuyorderState)
+        assert isinstance(old_state, models.BuyorderState)
+        await save_buyorder_state_history(db, old_state, state)
     await db.commit()
-    logger.debug("Updated buyorder state for buyorder for item %s", listing.item.name)
-    return buyorder_state
+    logger.debug("Updated state for order for item %s", listing.item.name)
+    return state

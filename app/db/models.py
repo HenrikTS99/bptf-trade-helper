@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import CheckConstraint, ForeignKey, UniqueConstraint, func
+from sqlalchemy import ForeignKey, UniqueConstraint, func
 from sqlalchemy.orm import (
     Mapped,
     mapped_column,
@@ -8,6 +8,7 @@ from sqlalchemy.orm import (
 )
 
 from app.db.base import Base
+from app.models.enums import Intent
 
 
 class User(Base):
@@ -19,7 +20,7 @@ class Listing(Base):
     __tablename__ = "listings"
     id: Mapped[str] = mapped_column(primary_key=True)
     steamid: Mapped[str]
-    intent: Mapped[str] = mapped_column(CheckConstraint("intent IN ('buy', 'sell')"))
+    intent: Mapped[Intent]
     status: Mapped[str] = mapped_column(default="active")
     keys: Mapped[int | None] = mapped_column(default=0)
     metal: Mapped[float | None] = mapped_column(default=0.0)

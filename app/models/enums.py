@@ -10,3 +10,5 @@ class RoundingMethod(StrEnum):
     UP_1_KEY = "up_1-key"
     NEAREST_5_KEY = "nearest_5-key"
     NEAREST_10_KEY = "nearest_10-key"
+    MATCH_PRICE = "match_price"
+    DOWN_1_KEY = "down_1-key"

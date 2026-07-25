@@ -40,10 +40,10 @@ class BackpackTFClient:
         )
 
     async def patch_listing_price(
-        self, listing_id: str, keys: int, metal: float
+        self, listing_id: str, keys: float | None, metal: float | None
     ) -> BPListing:
         body = {
-            "currencies": {"metal": metal, "keys": keys},
+            "currencies": {"metal": metal or 0, "keys": int(keys or 0)},
         }
         response = await self._patch(
             f"/v2/classifieds/listings/{listing_id}", body=body
