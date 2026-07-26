@@ -128,39 +128,22 @@ async def get_competitor_price(
 async def update_order_price(
     db: AsyncSession, listing: models.Listing
 ) -> models.BuyorderState | models.SellorderState | None:
-    if listing.intent == Intent.buy:
-        state = await db.get(models.BuyorderState, listing.id)
-    else:
-        state = await db.get(models.SellorderState, listing.id)
+    state_type = (
+        models.BuyorderState if listing.intent == Intent.buy else models.SellorderState
+    )
+    state = await db.get(state_type, listing.id)
     if not state:
         return None
 
     old_state = copy.deepcopy(state)
     state.user_keys = listing.keys
     state.user_metal = listing.metal
+    _update_competitor_status(
+        state, CurrencyValue(keys=state.user_keys, metal=state.user_metal)
+    )
 
-    if listing.intent == Intent.buy:
-        assert isinstance(state, models.BuyorderState)  # to fix pyright issues
-        assert isinstance(old_state, models.BuyorderState)
-        if CurrencyValue(keys=state.user_keys, metal=state.user_metal) >= CurrencyValue(
-            keys=state.top_competitor_keys,
-            metal=state.top_competitor_metal,
-        ):
-            state.is_outbid = False
-            state.outbid_by = None
-        if old_state.is_same_as(state):
-            return old_state
-    else:
-        assert isinstance(state, models.SellorderState)
-        assert isinstance(old_state, models.SellorderState)
-        if CurrencyValue(keys=state.user_keys, metal=state.user_metal) <= CurrencyValue(
-            keys=state.lowest_competitor_keys, metal=state.lowest_competitor_metal
-        ):
-            state.is_undercut = False
-            state.undercut_by = None
-        # duplicate here in if statement to avoid pyright complaint
-        if old_state.is_same_as(state):
-            return old_state
+    if old_state.is_same_as(state):  # type: ignore[reportArgumentType]
+        return old_state
 
     state = await db.merge(state)
 
@@ -171,3 +154,25 @@ async def update_order_price(
     await db.commit()
     logger.debug("Updated state for order for item %s", listing.item.name)
     return state
+
+
+def _update_competitor_status(
+    state: models.BuyorderState | models.SellorderState, users_price: CurrencyValue
+) -> None:
+    if isinstance(state, models.BuyorderState) and (
+        users_price
+        >= CurrencyValue(
+            keys=state.top_competitor_keys,
+            metal=state.top_competitor_metal,
+        )
+    ):
+        state.is_outbid = False
+        state.outbid_by = None
+    elif isinstance(state, models.SellorderState) and (
+        users_price
+        <= CurrencyValue(
+            keys=state.lowest_competitor_keys, metal=state.lowest_competitor_metal
+        )
+    ):
+        state.is_undercut = False
+        state.undercut_by = None
