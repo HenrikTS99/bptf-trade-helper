@@ -5,13 +5,14 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
 
 from app.db import models
+from app.models.enums import Intent
 from app.models.listings import BPListing, ItemData
 
 logger = logging.getLogger(__name__)
 
 
 async def get_stored_listings(
-    db: AsyncSession, intent: str | None = None
+    db: AsyncSession, intent: Intent | None = None
 ) -> list[models.Listing]:
     stmt = select(models.Listing).options(joinedload(models.Listing.item))
     if intent:

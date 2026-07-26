@@ -18,7 +18,7 @@ from app.models.responses import (
     SellorderStateResponse,
 )
 from app.services.listing_service import sync_listings
-from app.services.scanner_service import update_buyorder_data
+from app.services.scanner_service import update_order_data
 
 router = APIRouter()
 
@@ -78,14 +78,14 @@ async def refresh_buyorder_state(listing_id: str, db: AsyncSession = Depends(get
             status_code=400,
             detail=f"Listing {listing_id} is a sell order, not a buy order",
         )
-    buyorder_state, status = await update_buyorder_data(db, scanner, listing)
+    buyorder_state, status = await update_order_data(db, scanner, listing)
     if not buyorder_state:
         raise HTTPException(
             status_code=404,
             detail=f"Could not resolve buyorder state for {listing_id}. "
             f"Reason: {status}",
         )
-    # refresh all attributes after commit inside update_buyorder_data
+    # refresh all attributes after commit inside update_order_data
     # to prevent MissingGreenlet on serialization
     await db.refresh(buyorder_state)
     await db.refresh(buyorder_state, ["listing"])  # load relationship
