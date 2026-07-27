@@ -8,6 +8,7 @@
             hx-swap="outerHTML"
             hx-trigger="change"
             hx-vals='js:{"only_beaten": event.target.checked}'
+            hx-select="#main"
             {% if only_beaten %} checked {% endif %}/>
         Only Beaten
     </label>
