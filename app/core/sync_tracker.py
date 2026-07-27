@@ -1,6 +1,8 @@
 from dataclasses import dataclass
 from enum import Enum
 
+from app.models.enums import Intent
+
 
 class SyncPhase(Enum):
     IDLE = "idle"
@@ -11,6 +13,7 @@ class SyncPhase(Enum):
 
 @dataclass
 class SyncTracker:
+    intent: Intent
     phase: SyncPhase = SyncPhase.IDLE
     current: int = 0
     total: int = 0
@@ -29,7 +32,7 @@ class SyncTracker:
     def update_progress(self, current: int, total: int):
         self.current = current
         self.total = total
-        self.message = f"Refreshing buy states... ({current}/{total})"
+        self.message = f"Refreshing {self.intent} states... ({current}/{total})"
 
     def complete(self, elapsed: float):
         self.phase = SyncPhase.COMPLETED
@@ -40,4 +43,5 @@ class SyncTracker:
         self.message = str(error)
 
 
-sync_tracker = SyncTracker()
+buy_sync_tracker = SyncTracker(intent=Intent.buy)
+sell_sync_tracker = SyncTracker(intent=Intent.sell)

@@ -1,0 +1,36 @@
+<tr id=row-{{so_history.id}}>
+  <td><a href="{{so_history.listing.item_url}}" target="_blank">{{ so_history.listing.item.name }}</a></td>
+  <td>{{so_history.changed_at}}</td>
+
+  <td>
+    {% if so_history.price_updated_changed %}
+    {{ so_history.old_user_keys }} → {{ so_history.new_user_keys }} keys
+    {% if so_history.new_user_metal %} ({{ so_history.old_user_metal }} → {{ so_history.new_user_metal }} ref){% endif
+    %}
+    {% else %}{% endif %}
+  </td>
+  <td>
+    {% if so_history.competitor_price_changed %}
+    {{ so_history.old_lowest_competitor_keys }} → {{ so_history.new_lowest_competitor_keys }} keys
+    {% if so_history.new_lowest_competitor_metal %} ({{ so_history.old_lowest_competitor_metal }} → {{
+    so_history.new_lowest_competitor_metal }} ref){% endif %}
+    {% else %}{% endif %}
+  </td>
+  <td>
+    {% if so_history.highest_buyer_changed %}
+    {% if so_history.old_highest_buyer_keys or so_history.old_highest_buyer_metal %}
+    {{ so_history.old_highest_buyer_keys or '—' }} → {{ so_history.new_highest_buyer_keys or '—' }} keys
+
+    {% if so_history.new_highest_buyer_metal %} ({{ so_history.old_highest_buyer_metal }} → {{
+    so_history.new_highest_buyer_metal }} ref){% endif %}
+    {% else %}— → {{ so_history.new_highest_buyer_keys or '—' }} keys{% endif %}
+    {% else %}{% endif %}
+  </td>
+  <td>
+    {% if so_history.undercut_changed and so_history.new_is_undercut %} Now undercut! {% endif %}
+    {% if so_history.regained_lowest_changed %} Regained lowest! {% endif %}
+    {% if so_history.competitor_price_changed %} Competitor changed! {% endif %}
+    {% if so_history.price_updated_changed %} Price changed! {% endif %}
+    {% if so_history.highest_buyer_changed %} Buyer changed! {% endif %}
+  </td>
+</tr>

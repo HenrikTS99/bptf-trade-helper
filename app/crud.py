@@ -108,6 +108,72 @@ async def get_stored_sellorder_states(
     return list(result.scalars().all())
 
 
+async def get_stored_sellorder_state_histories(
+    db: AsyncSession,
+) -> list[models.SellorderStateHistory]:
+    stmt = (
+        select(models.SellorderStateHistory)
+        .options(
+            joinedload(models.SellorderStateHistory.listing).joinedload(
+                models.Listing.item
+            )
+        )
+        .order_by(models.SellorderStateHistory.changed_at.desc())
+    )
+    result = await db.execute(stmt)
+    return list(result.scalars().all())
+
+
+async def save_sellorder_state_history(
+    db: AsyncSession,
+    old_sellorder_state: models.SellorderState,
+    new_sellorder_state: models.SellorderState,
+):
+    sellorder_state_history = models.SellorderStateHistory(
+        listing_id=new_sellorder_state.listing_id,
+        old_user_keys=old_sellorder_state.user_keys,
+        old_user_metal=old_sellorder_state.user_metal,
+        old_lowest_competitor_keys=old_sellorder_state.lowest_competitor_keys,
+        old_lowest_competitor_metal=old_sellorder_state.lowest_competitor_metal,
+        old_is_undercut=old_sellorder_state.is_undercut,
+        old_highest_buyer_keys=old_sellorder_state.highest_buyer_keys,
+        old_highest_buyer_metal=old_sellorder_state.highest_buyer_metal,
+        new_user_keys=new_sellorder_state.user_keys,
+        new_user_metal=new_sellorder_state.user_metal,
+        new_lowest_competitor_keys=new_sellorder_state.lowest_competitor_keys,
+        new_lowest_competitor_metal=new_sellorder_state.lowest_competitor_metal,
+        new_is_undercut=new_sellorder_state.is_undercut,
+        new_highest_buyer_keys=new_sellorder_state.highest_buyer_keys,
+        new_highest_buyer_metal=new_sellorder_state.highest_buyer_metal,
+        # change types
+        undercut_changed=old_sellorder_state.is_undercut
+        != new_sellorder_state.is_undercut,
+    )
+    if (old_sellorder_state.is_undercut) and (not new_sellorder_state.is_undercut):
+        sellorder_state_history.regained_lowest_changed = True
+    if (
+        old_sellorder_state.lowest_competitor_keys
+        != new_sellorder_state.lowest_competitor_keys
+    ) or (
+        old_sellorder_state.lowest_competitor_metal
+        != new_sellorder_state.lowest_competitor_metal
+    ):
+        sellorder_state_history.competitor_price_changed = True
+    if (old_sellorder_state.user_keys != new_sellorder_state.user_keys) or (
+        old_sellorder_state.user_metal != new_sellorder_state.user_metal
+    ):
+        sellorder_state_history.price_updated_changed = True
+
+    if (
+        old_sellorder_state.highest_buyer_keys != new_sellorder_state.highest_buyer_keys
+    ) or (
+        old_sellorder_state.highest_buyer_metal
+        != new_sellorder_state.highest_buyer_metal
+    ):
+        sellorder_state_history.highest_buyer_changed = True
+    db.add(sellorder_state_history)
+
+
 async def get_listing(
     db: AsyncSession, id: str, status: str = "active"
 ) -> models.Listing | None:

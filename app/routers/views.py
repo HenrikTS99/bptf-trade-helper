@@ -5,11 +5,12 @@ from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.sync_tracker import sync_tracker
+from app.core.sync_tracker import buy_sync_tracker, sell_sync_tracker
 from app.crud import (
     get_listing,
     get_stored_buyorder_state_histories,
     get_stored_buyorder_states,
+    get_stored_sellorder_state_histories,
     get_stored_sellorder_states,
 )
 from app.db.base import get_db
@@ -39,7 +40,7 @@ async def display_dashboard(
         context={
             "beaten_buyorders": buyorders,
             "only_beaten": only_beaten,
-            "tracker": sync_tracker,
+            "tracker": buy_sync_tracker,
         },
     )
 
@@ -57,7 +58,7 @@ async def display_dashboard_sellorders(
         context={
             "beaten_sellorders": sellorders,
             "only_beaten": only_beaten,
-            "tracker": sync_tracker,
+            "tracker": sell_sync_tracker,
         },
     )
 
@@ -73,6 +74,21 @@ async def display_history(
         name="pages/buyorder_state_history.html",
         context={
             "buyorder_state_histories": buyorder_state_histories,
+        },
+    )
+
+
+@router.get("/sellorders-history", response_class=HTMLResponse)
+async def display_sellorder_history(
+    request: Request,
+    db: AsyncSession = Depends(get_db),
+):
+    sellorder_state_histories = await get_stored_sellorder_state_histories(db)
+    return templates.TemplateResponse(
+        request=request,
+        name="pages/sellorder_state_history.html",
+        context={
+            "sellorder_state_histories": sellorder_state_histories,
         },
     )
 
@@ -120,32 +136,33 @@ async def round_listing_price(
 
 @router.post("/buyorder_states/refresh", response_class=HTMLResponse)
 async def update_buyorder_states(request: Request):
-    if not sync_tracker.is_syncing:
-        scheduler.modify_job("run_scheduled_sync", next_run_time=datetime.now())
-        sync_tracker.start()
+    if not buy_sync_tracker.is_syncing:
+        scheduler.modify_job("run_buyorder_sync", next_run_time=datetime.now())
+        buy_sync_tracker.start()
     return templates.TemplateResponse(
         request=request,
         name="partials/sync_status.html",
-        context={"tracker": sync_tracker},
+        context={"tracker": buy_sync_tracker, "intent": Intent.buy},
     )
 
 
 @router.post("/sellorder_states/refresh", response_class=HTMLResponse)
 async def update_sellorder_states(request: Request):
-    if not sync_tracker.is_syncing:
+    if not sell_sync_tracker.is_syncing:
         scheduler.modify_job("run_sellorder_sync", next_run_time=datetime.now())
-        sync_tracker.start()
+        sell_sync_tracker.start()
     return templates.TemplateResponse(
         request=request,
         name="partials/sync_status.html",
-        context={"tracker": sync_tracker},
+        context={"tracker": sell_sync_tracker, "intent": Intent.sell},
     )
 
 
-@router.get("/sync-status", response_class=HTMLResponse)
-async def sync_status(request: Request):
+@router.get("/sync-status/{intent}", response_class=HTMLResponse)
+async def sync_status(request: Request, intent: Intent):
+    tracker = buy_sync_tracker if intent == Intent.buy else sell_sync_tracker
     return templates.TemplateResponse(
         request=request,
         name="partials/sync_status.html",
-        context={"tracker": sync_tracker},
+        context={"tracker": tracker, "intent": intent},
     )

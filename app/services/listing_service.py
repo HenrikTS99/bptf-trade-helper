@@ -5,7 +5,12 @@ import math
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.bp_client import BackpackTFClient
-from app.crud import get_or_create_item, save_buyorder_state_history, upsert_listing
+from app.crud import (
+    get_or_create_item,
+    save_buyorder_state_history,
+    save_sellorder_state_history,
+    upsert_listing,
+)
 from app.db import models
 from app.models.enums import Intent, RoundingMethod
 from app.models.listings import BPListing, CurrencyValue
@@ -151,6 +156,10 @@ async def update_order_price(
         assert isinstance(state, models.BuyorderState)
         assert isinstance(old_state, models.BuyorderState)
         await save_buyorder_state_history(db, old_state, state)
+    else:
+        assert isinstance(state, models.SellorderState)
+        assert isinstance(old_state, models.SellorderState)
+        await save_sellorder_state_history(db, old_state, state)
     await db.commit()
     logger.debug("Updated state for order for item %s", listing.item.name)
     return state

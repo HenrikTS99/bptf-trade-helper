@@ -8,7 +8,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.bp_client import BackpackTFClient, BackpackTFError
 from app.core.scanner import BuyorderError, Scanner
 from app.core.sync_tracker import SyncTracker
-from app.crud import get_stored_listings, save_buyorder_state_history
+from app.crud import (
+    get_stored_listings,
+    save_buyorder_state_history,
+    save_sellorder_state_history,
+)
 from app.db import models
 from app.models.enums import Intent
 from app.models.listings import (
@@ -139,7 +143,8 @@ async def _update_order_state(
         await db.commit()
         if listing.intent == Intent.buy:
             await save_buyorder_state_history(db, old_copy, old_order_state)
-        # await save_order_state_history(db, old_copy, old_sellorder_state)
+        else:
+            await save_sellorder_state_history(db, old_copy, old_order_state)
         logger.debug(
             "Updated order state for %sorder for item %s",
             listing.intent,

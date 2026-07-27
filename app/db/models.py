@@ -38,6 +38,9 @@ class Listing(Base):
     sellorder_states: Mapped[list[SellorderState]] = relationship(
         back_populates="listing"
     )
+    sellorder_state_history: Mapped[list[SellorderStateHistory]] = relationship(
+        back_populates="listing"
+    )
 
 
 class Item(Base):
@@ -80,6 +83,38 @@ class SellorderState(Base):
             and self.highest_buyer_keys == other.highest_buyer_keys
             and self.highest_buyer_metal == other.highest_buyer_metal
         )
+
+
+class SellorderStateHistory(Base):
+    __tablename__ = "sellorder_state_history"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    listing_id: Mapped[str] = mapped_column(ForeignKey("listings.id"))
+    listing: Mapped[Listing] = relationship(back_populates="sellorder_state_history")
+    changed_at: Mapped[datetime] = mapped_column(
+        server_default=func.now(), onupdate=func.now()
+    )
+    # old states
+    old_user_keys: Mapped[int | None]
+    old_user_metal: Mapped[float | None]
+    old_lowest_competitor_keys: Mapped[int | None]
+    old_lowest_competitor_metal: Mapped[float | None]
+    old_is_undercut: Mapped[bool] = mapped_column(default=False)
+    old_highest_buyer_keys: Mapped[int | None]
+    old_highest_buyer_metal: Mapped[float | None]
+    # new states
+    new_user_keys: Mapped[int | None]
+    new_user_metal: Mapped[float | None]
+    new_lowest_competitor_keys: Mapped[int | None]
+    new_lowest_competitor_metal: Mapped[float | None]
+    new_is_undercut: Mapped[bool] = mapped_column(default=False)
+    new_highest_buyer_keys: Mapped[int | None]
+    new_highest_buyer_metal: Mapped[float | None]
+    # change types
+    undercut_changed: Mapped[bool] = mapped_column(default=False)
+    regained_lowest_changed: Mapped[bool] = mapped_column(default=False)
+    competitor_price_changed: Mapped[bool] = mapped_column(default=False)
+    price_updated_changed: Mapped[bool] = mapped_column(default=False)
+    highest_buyer_changed: Mapped[bool] = mapped_column(default=False)
 
 
 class BuyorderState(Base):

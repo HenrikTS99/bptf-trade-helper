@@ -12,7 +12,7 @@
             {% if only_beaten %} checked {% endif %}/>
         Only Beaten
     </label>
-    {% include "partials/sync_status.html" %}
+    {% with intent="buy" %}{% include "partials/sync_status.html" %}{% endwith %}
 </div>
 <table class="striped">
     <thead>
