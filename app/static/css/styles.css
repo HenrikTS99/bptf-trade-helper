@@ -5,3 +5,13 @@
 .winning {
     color: green;
 }
+
+.actions {
+  display:flex;
+  gap: 0.5rem;
+}
+
+.actions button {
+  padding: 0.25rem 0.5rem;
+  font-size: 0.75rem;
+}
