@@ -27,7 +27,7 @@ router = APIRouter()
 templates = Jinja2Templates(directory="app/templates")
 
 
-@router.get("/", response_class=HTMLResponse)
+@router.get("/buyorders", response_class=HTMLResponse)
 async def display_dashboard(
     request: Request,
     only_beaten: bool = Query(default=False),
@@ -63,7 +63,7 @@ async def display_dashboard_sellorders(
     )
 
 
-@router.get("/history", response_class=HTMLResponse)
+@router.get("/buyorders-history", response_class=HTMLResponse)
 async def display_history(
     request: Request,
     db: AsyncSession = Depends(get_db),
