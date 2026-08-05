@@ -28,6 +28,7 @@ templates = Jinja2Templates(directory="app/templates")
 
 
 @router.get("/buyorders", response_class=HTMLResponse)
+@router.get("/", response_class=HTMLResponse)
 async def display_dashboard(
     request: Request,
     only_beaten: bool = Query(default=False),
@@ -67,13 +68,25 @@ async def display_dashboard_sellorders(
 async def display_history(
     request: Request,
     db: AsyncSession = Depends(get_db),
+    outbid: bool = Query(default=True),
+    regained_top: bool = Query(default=True),
+    competitor_price: bool = Query(default=False),
+    price_updated: bool = Query(default=False),
+    lowest_seller: bool = Query(default=False),
 ):
-    buyorder_state_histories = await get_stored_buyorder_state_histories(db)
+    buyorder_state_histories = await get_stored_buyorder_state_histories(
+        db, outbid, regained_top, competitor_price, price_updated, lowest_seller
+    )
     return templates.TemplateResponse(
         request=request,
         name="pages/buyorder_state_history.html",
         context={
             "buyorder_state_histories": buyorder_state_histories,
+            "outbid": outbid,
+            "regained_top": regained_top,
+            "competitor_price": competitor_price,
+            "price_updated": price_updated,
+            "lowest_seller": lowest_seller,
         },
     )
 

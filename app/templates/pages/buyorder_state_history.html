@@ -1,5 +1,44 @@
 {% extends "base.html" %}
 {% block content %}
+<div>
+    <form id="history-filters"
+        hx-get="/buyorders-history"
+        hx-target="#main"
+        hx-swap="outerHTML"
+        hx-trigger="change"
+        hx-select="#main"
+        hx-vals='js:{
+            "outbid": document.getElementById("outbid-box").checked,
+             "regained_top": document.getElementById("regained_top-box").checked}'>
+        <label role="group">
+            <input id="outbid-box" type="checkbox" name="outbid"
+                {% if outbid %} checked {% endif %}/>
+            Outbid
+        </label>
+        <label role="group">
+            <input id="regained_top-box" type="checkbox" name="regained_top"
+                {% if regained_top %} checked {% endif %}/>
+            Regained top
+        </label>
+        <label role="group">
+            <input type="checkbox" name="competitor_price"
+                {% if competitor_price %} checked {% endif %}/>
+            Competitor changed
+        </label>
+
+        <label role="group">
+            <input type="checkbox" name="price_updated"
+                {% if price_updated %} checked {% endif %}/>
+            Price changed
+        </label>
+
+        <label role="group">
+            <input type="checkbox" name="lowest_seller"
+                {% if lowest_seller %} checked {% endif %}/>
+            Seller changed
+        </label>
+    </form>
+</div>
 <table class="striped">
   <thead>
     <tr>

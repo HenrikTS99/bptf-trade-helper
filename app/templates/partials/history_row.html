@@ -18,9 +18,12 @@
   </td>
   <td>
     {% if bo_history.lowest_seller_changed %}
-    {% if bo_history.old_lowest_seller_keys or bo_history.old_lowest_seller_metal %}
+    {% if bo_history.old_lowest_seller_keys or bo_history.new_lowest_seller_keys %}
     {{ bo_history.old_lowest_seller_keys or '—' }} → {{ bo_history.new_lowest_seller_keys or '—' }} keys
-    {% else %}— → {{ bo_history.new_lowest_seller_keys or '—' }} keys{% endif %}
+    {% endif %}
+    {% if bo_history.old_lowest_seller_metal or bo_history.new_lowest_seller_metal %}
+    ({{ bo_history.old_lowest_seller_metal or 0 }} → {{ bo_history.new_lowest_seller_metal or '—' }} ref)
+    {% endif %}
     {% else %}{% endif %}
   </td>
   <td>

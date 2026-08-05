@@ -1,6 +1,6 @@
 import logging
 
-from sqlalchemy import select
+from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
 
@@ -35,6 +35,11 @@ async def get_stored_buyorder_states(
 
 async def get_stored_buyorder_state_histories(
     db: AsyncSession,
+    outbid: bool = True,
+    regained_top: bool = True,
+    competitor_price: bool = True,
+    price_updated: bool = True,
+    lowest_seller: bool = True,
 ) -> list[models.BuyorderStateHistory]:
     stmt = (
         select(models.BuyorderStateHistory)
@@ -45,6 +50,22 @@ async def get_stored_buyorder_state_histories(
         )
         .order_by(models.BuyorderStateHistory.changed_at.desc())
     )
+    filters = []
+    if outbid:
+        filters.append(
+            models.BuyorderStateHistory.outbid_changed.is_(True)
+            & models.BuyorderStateHistory.new_is_outbid.is_(True)
+        )
+    if regained_top:
+        filters.append(models.BuyorderStateHistory.regained_top_changed.is_(True))
+    if competitor_price:
+        filters.append(models.BuyorderStateHistory.competitor_price_changed.is_(True))
+    if price_updated:
+        filters.append(models.BuyorderStateHistory.price_updated_changed.is_(True))
+    if lowest_seller:
+        filters.append(models.BuyorderStateHistory.lowest_seller_changed.is_(True))
+    if filters:
+        stmt = stmt.where(or_(*filters))
     result = await db.execute(stmt)
     return list(result.scalars().all())
 
