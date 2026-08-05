@@ -131,6 +131,11 @@ async def get_stored_sellorder_states(
 
 async def get_stored_sellorder_state_histories(
     db: AsyncSession,
+    undercut: bool = True,
+    regained_lowest: bool = True,
+    competitor_price: bool = True,
+    price_updated: bool = True,
+    highest_buyer: bool = True,
 ) -> list[models.SellorderStateHistory]:
     stmt = (
         select(models.SellorderStateHistory)
@@ -141,6 +146,22 @@ async def get_stored_sellorder_state_histories(
         )
         .order_by(models.SellorderStateHistory.changed_at.desc())
     )
+    filters = []
+    if undercut:
+        filters.append(
+            models.SellorderStateHistory.undercut_changed.is_(True)
+            & models.SellorderStateHistory.new_is_undercut.is_(True)
+        )
+    if regained_lowest:
+        filters.append(models.SellorderStateHistory.regained_lowest_changed.is_(True))
+    if competitor_price:
+        filters.append(models.SellorderStateHistory.competitor_price_changed.is_(True))
+    if price_updated:
+        filters.append(models.SellorderStateHistory.price_updated_changed.is_(True))
+    if highest_buyer:
+        filters.append(models.SellorderStateHistory.highest_buyer_changed.is_(True))
+    if filters:
+        stmt = stmt.where(or_(*filters))
     result = await db.execute(stmt)
     return list(result.scalars().all())
 

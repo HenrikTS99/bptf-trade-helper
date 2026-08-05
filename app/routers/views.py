@@ -95,13 +95,25 @@ async def display_history(
 async def display_sellorder_history(
     request: Request,
     db: AsyncSession = Depends(get_db),
+    undercut: bool = Query(default=True),
+    regained_lowest: bool = Query(default=True),
+    competitor_price: bool = Query(default=False),
+    price_updated: bool = Query(default=False),
+    highest_buyer: bool = Query(default=True),
 ):
-    sellorder_state_histories = await get_stored_sellorder_state_histories(db)
+    sellorder_state_histories = await get_stored_sellorder_state_histories(
+        db, undercut, regained_lowest, competitor_price, price_updated, highest_buyer
+    )
     return templates.TemplateResponse(
         request=request,
         name="pages/sellorder_state_history.html",
         context={
             "sellorder_state_histories": sellorder_state_histories,
+            "undercut": undercut,
+            "regained_lowest": regained_lowest,
+            "competitor_price": competitor_price,
+            "price_updated": price_updated,
+            "highest_buyer": highest_buyer,
         },
     )
 

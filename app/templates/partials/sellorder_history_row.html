@@ -16,14 +16,14 @@
     so_history.new_lowest_competitor_metal }} ref){% endif %}
     {% else %}{% endif %}
   </td>
-  <td>
+  <td> 
     {% if so_history.highest_buyer_changed %}
-    {% if so_history.old_highest_buyer_keys or so_history.old_highest_buyer_metal %}
+    {% if so_history.old_highest_buyer_keys or so_history.new_highest_buyer_keys %}
     {{ so_history.old_highest_buyer_keys or '—' }} → {{ so_history.new_highest_buyer_keys or '—' }} keys
-
-    {% if so_history.new_highest_buyer_metal %} ({{ so_history.old_highest_buyer_metal }} → {{
-    so_history.new_highest_buyer_metal }} ref){% endif %}
-    {% else %}— → {{ so_history.new_highest_buyer_keys or '—' }} keys{% endif %}
+    {% endif %}
+    {% if so_history.old_highest_buyer_metal or so_history.new_highest_buyer_metal %}
+    ({{ so_history.old_highest_buyer_metal or 0 }} → {{ so_history.new_highest_buyer_metal or 0 }} ref)
+    {% endif %}
     {% else %}{% endif %}
   </td>
   <td>

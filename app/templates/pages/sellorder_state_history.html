@@ -1,5 +1,45 @@
 {% extends "base.html" %}
 {% block content %}
+<div>
+    <form id="history-filters"
+        hx-get="/sellorders-history"
+        hx-target="#main"
+        hx-swap="outerHTML"
+        hx-trigger="change"
+        hx-select="#main"
+        hx-vals='js:{
+            "undercut": document.getElementById("undercut-box").checked,
+             "regained_lowest": document.getElementById("regained_lowest-box").checked}'>
+        <label role="group">
+            <input id="undercut-box" type="checkbox" name="undercut"
+                {% if undercut %} checked {% endif %}/>
+            Undercut
+        </label>
+        <label role="group">
+            <input id="regained_lowest-box" type="checkbox" name="regained_lowest"
+                {% if regained_lowest %} checked {% endif %}/>
+            Regained lowest
+        </label>
+        <label role="group">
+            <input type="checkbox" name="competitor_price"
+                {% if competitor_price %} checked {% endif %}/>
+            Competitor changed
+        </label>
+
+        <label role="group">
+            <input type="checkbox" name="price_updated"
+                {% if price_updated %} checked {% endif %}/>
+            Price changed
+        </label>
+
+        <label role="group">
+            <input type="checkbox" name="highest_buyer"
+                {% if highest_buyer %} checked {% endif %}/>
+            Buyer changed
+        </label>
+    </form>
+</div>
+
 <table class="striped">
   <thead>
     <tr>
