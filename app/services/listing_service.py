@@ -87,7 +87,6 @@ async def update_listing_price(
 def apply_rounding_strategy(
     keys: int, metal: float, strategy: RoundingMethod
 ) -> CurrencyValue | None:
-    # TODO: very important to not have mistakes here, make tests for this.
     if strategy == RoundingMethod.UP_1_KEY:
         keys += 1
         metal = 0
