@@ -69,7 +69,6 @@ async def update_listing_price(
         int(competitor_price.keys or 0),
         competitor_price.metal or 0,
         rounding_strategy,
-        competitor_price.metal,
     )
     if new_listing_price is None:
         return None
@@ -86,7 +85,7 @@ async def update_listing_price(
 
 
 def apply_rounding_strategy(
-    keys: int, metal: float, strategy: RoundingMethod, competitor_metal: float | None
+    keys: int, metal: float, strategy: RoundingMethod
 ) -> CurrencyValue | None:
     # TODO: very important to not have mistakes here, make tests for this.
     if strategy == RoundingMethod.UP_1_KEY:
@@ -103,7 +102,7 @@ def apply_rounding_strategy(
             return None
         # if competitor has no metal in buyorder, go down a key.
         # If not, just remove metal.
-        if not competitor_metal or competitor_metal == 0:
+        if not metal:
             keys -= 1
         metal = 0
     return CurrencyValue(keys=keys, metal=metal)
