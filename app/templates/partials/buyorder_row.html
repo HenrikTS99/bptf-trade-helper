@@ -26,6 +26,11 @@
   </td>
   <td>
     <div class="actions">
+
+        <button class="outline contrast" hx-patch="/listings/{{bo.listing.id}}/round-price?rounding_strategy=match_price"
+            hx-target="#row-{{bo.listing.id}}" hx-swap="outerHTML">
+            Match price
+        </button>
         <button class="contrast" hx-patch="/listings/{{bo.listing.id}}/round-price?rounding_strategy=up_1-key"
             hx-target="#row-{{bo.listing.id}}" hx-swap="outerHTML">
             Beat by 1 key
