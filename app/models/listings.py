@@ -9,6 +9,8 @@ class CurrencyValue(BaseModel):
     keys: float | None = 0  # Float due to validation errors
     metal: float | None = 0
 
+    # 100 metal is more than 1 key, but due to flucuating prices, this only checks if
+    # keys are not equal, if not checks if metal is not equal
     def __gt__(self, other: CurrencyValue) -> bool:
         my_keys = self.keys or 0
         other_keys = other.keys or 0
