@@ -1,17 +1,33 @@
 {% if tracker.is_syncing %}
-<div id="sync-area" hx-get="/sync-status/{{ intent }}" hx-trigger="every 2s" hx-swap="outerHTML">
+<div id="sync-area" hx-get="/sync-status/{{ intent }}" hx-trigger="every 2s" hx-swap="outerHTML" hx-include="#only-beaten">
   <progress value="{{ tracker.current }}" max="{{ tracker.total }}"></progress>
   <small>{{ tracker.message }}</small>
 </div>
 {% else %}
 <div id="sync-area">
-    <button hx-post="/{{ intent }}order_states/refresh" hx-target="#sync-area" hx-swap="outerHTML">
+    <button hx-post="/{{ intent }}order_states/refresh" hx-target="#sync-area" hx-swap="outerHTML" hx-include="#only-beaten">
     Force update
   </button>
+
   {% if tracker.phase.value == "completed" %}
   <small>{{ tracker.message }}</small>
+  <div hx-get="/{{ 'buyorders' if intent == 'buy' else 'sellorders' }}{{ '?only_beaten=True' if only_beaten }}"
+       hx-trigger="load" hx-target="#main" hx-swap="outerHTML" hx-select="#main"></div>
+
   {% elif tracker.phase.value == "failed" %}
   <small style="color: var(--pico-color-red)">{{ tracker.message }}</small>
   {% endif %}
 </div>
+{% endif %}
+
+{% if synced_states %}
+<template>
+{% for state in synced_states %}
+  {% if intent == "buy" %}
+    {% set bo = state %}{% include "partials/buyorder_row.html" %}
+  {% else %}
+    {% set so = state %}{% include "partials/sellorder_row.html" %}
+  {% endif %}
+{% endfor %}
+</template>
 {% endif %}

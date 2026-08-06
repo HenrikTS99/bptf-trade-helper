@@ -46,6 +46,8 @@ async def refresh_order_states(
     for i, listing in enumerate(listings):
         _, status = await update_order_data(db, scanner, listing)
         counts[status] += 1
+        if status in ["new", "updated"]:
+            tracker.synced_ids.append(listing.id)
         tracker.update_progress(i + 1, len(listings))
         await asyncio.sleep(1)  # for rate limiter
     logger.info(

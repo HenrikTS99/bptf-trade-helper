@@ -15,3 +15,13 @@
   padding: 0.25rem 0.5rem;
   font-size: 0.75rem;
 }
+
+.row-updated {
+  animation: row-flash 1.2s ease-out;
+}
+
+@keyframes row-flash {
+  from { background-color: #b3d9ff; }
+  to { background-color: transparent; }
+
+}

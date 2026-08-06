@@ -33,6 +33,20 @@ async def get_stored_buyorder_states(
     return list(result.scalars().all())
 
 
+async def get_buyorder_states_by_ids(
+    db: AsyncSession, ids: list[str]
+) -> list[models.BuyorderState]:
+    stmt = (
+        select(models.BuyorderState)
+        .options(
+            joinedload(models.BuyorderState.listing).joinedload(models.Listing.item)
+        )
+        .where(models.BuyorderState.listing_id.in_(ids))
+    )
+    result = await db.execute(stmt)
+    return list(result.scalars().all())
+
+
 async def get_stored_buyorder_state_histories(
     db: AsyncSession,
     outbid: bool = True,
@@ -125,6 +139,20 @@ async def get_stored_sellorder_states(
     )
     if only_beaten:
         stmt = stmt.where(models.SellorderState.is_undercut == only_beaten)
+    result = await db.execute(stmt)
+    return list(result.scalars().all())
+
+
+async def get_sellorder_states_by_ids(
+    db: AsyncSession, ids: list[str]
+) -> list[models.SellorderState]:
+    stmt = (
+        select(models.SellorderState)
+        .options(
+            joinedload(models.SellorderState.listing).joinedload(models.Listing.item)
+        )
+        .where(models.SellorderState.listing_id.in_(ids))
+    )
     result = await db.execute(stmt)
     return list(result.scalars().all())
 

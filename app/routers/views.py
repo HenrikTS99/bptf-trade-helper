@@ -7,7 +7,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.sync_tracker import buy_sync_tracker, sell_sync_tracker
 from app.crud import (
+    get_buyorder_states_by_ids,
     get_listing,
+    get_sellorder_states_by_ids,
     get_stored_buyorder_state_histories,
     get_stored_buyorder_states,
     get_stored_sellorder_state_histories,
@@ -184,10 +186,31 @@ async def update_sellorder_states(request: Request):
 
 
 @router.get("/sync-status/{intent}", response_class=HTMLResponse)
-async def sync_status(request: Request, intent: Intent):
+async def sync_status(
+    request: Request,
+    intent: Intent,
+    db: AsyncSession = Depends(get_db),
+    only_beaten: bool = Query(default=False),
+):
     tracker = buy_sync_tracker if intent == Intent.buy else sell_sync_tracker
+    synced_states = []
+    ids = tracker.synced_ids.copy()
+    if ids:
+        if intent == Intent.buy:
+            synced_states = await get_buyorder_states_by_ids(db, ids)
+        else:
+            synced_states = await get_sellorder_states_by_ids(db, ids)
+
+    tracker.synced_ids = [i for i in tracker.synced_ids if i not in ids]
+
     return templates.TemplateResponse(
         request=request,
         name="partials/sync_status.html",
-        context={"tracker": tracker, "intent": intent},
+        context={
+            "tracker": tracker,
+            "intent": intent,
+            "synced_states": synced_states,
+            "oob": True,
+            "only_beaten": only_beaten,
+        },
     )

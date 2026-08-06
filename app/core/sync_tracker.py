@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import Enum
 
 from app.models.enums import Intent
@@ -18,6 +18,7 @@ class SyncTracker:
     current: int = 0
     total: int = 0
     message: str = ""
+    synced_ids: list[str] = field(default_factory=list)
 
     @property
     def is_syncing(self) -> bool:
@@ -28,6 +29,7 @@ class SyncTracker:
         self.current = 0
         self.total = 0
         self.message = "Starting..."
+        self.synced_ids.clear()
 
     def update_progress(self, current: int, total: int):
         self.current = current

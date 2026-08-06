@@ -1,4 +1,4 @@
-<tr id=row-{{so.listing.id}}>
+<tr id=row-{{so.listing.id}} {% if oob %} class="row-updated" hx-swap-oob="outerHTML:#row-{{so.listing.id}}"{% endif %}>
   <td><a href="{{so.listing.item_url}}" target="_blank">{{ so.item_name }}</a></td>
   <td>{{ so.user_keys }} keys {% if so.user_metal %} {{ so.user_metal }} ref{% endif %}</td>
   <td>
