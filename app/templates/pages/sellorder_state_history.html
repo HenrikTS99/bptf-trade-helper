@@ -9,7 +9,8 @@
         hx-select="#main"
         hx-vals='js:{
             "undercut": document.getElementById("undercut-box").checked,
-             "regained_lowest": document.getElementById("regained_lowest-box").checked}'>
+            "regained_lowest": document.getElementById("regained_lowest-box").checked,
+            "highest_buyer": document.getElementById("highest_buyer-box").checked}'>
         <label role="group">
             <input id="undercut-box" type="checkbox" name="undercut"
                 {% if undercut %} checked {% endif %}/>
@@ -33,7 +34,7 @@
         </label>
 
         <label role="group">
-            <input type="checkbox" name="highest_buyer"
+            <input id="highest_buyer-box" type="checkbox" name="highest_buyer"
                 {% if highest_buyer %} checked {% endif %}/>
             Buyer changed
         </label>
