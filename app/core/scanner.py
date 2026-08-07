@@ -42,7 +42,9 @@ class Scanner:
     ) -> SnapshotBPListing | None:
         return self._highest_buyorder(buyorders)
 
-    def _highest_buyorder(self, orders, exclude_own=False):
+    def _highest_buyorder(
+        self, orders: list[SnapshotBPListing], exclude_own: bool = False
+    ) -> SnapshotBPListing | None:
         highest = None
         for order in orders:
             # Ignore items listed in dollars (marketplace.tf)
@@ -66,7 +68,9 @@ class Scanner:
     ) -> SnapshotBPListing | None:
         return self._lowest_sellorder(sellorders)
 
-    def _lowest_sellorder(self, orders, exclude_own=False):
+    def _lowest_sellorder(
+        self, orders: list[SnapshotBPListing], exclude_own: bool = False
+    ) -> SnapshotBPListing | None:
         lowest = None
         for order in orders:
             # Ignore items listed in dollars (marketplace.tf)
