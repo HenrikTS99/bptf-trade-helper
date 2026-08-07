@@ -35,21 +35,22 @@ class Scanner:
     def get_highest_competitor_buyorder(
         self, buyorders: list[SnapshotBPListing]
     ) -> SnapshotBPListing | None:
-        highest = None
-        for order in buyorders:
-            if order.steamid == self.steamid or order.is_spelled:
-                continue
-            if highest is None or order.currencies > highest.currencies:
-                highest = order
-        return highest
+        return self._highest_buyorder(buyorders, exclude_own=True)
 
     def get_highest_buyorder(
         self, buyorders: list[SnapshotBPListing]
     ) -> SnapshotBPListing | None:
+        return self._highest_buyorder(buyorders)
+
+    def _highest_buyorder(self, orders, exclude_own=False):
         highest = None
-        for order in buyorders:
+        for order in orders:
             # Ignore items listed in dollars (marketplace.tf)
             if order.currencies.keys == 0 and order.currencies.metal == 0:
+                continue
+            if order.is_spelled:
+                continue
+            if exclude_own and order.steamid == self.steamid:
                 continue
             if highest is None or order.currencies > highest.currencies:
                 highest = order
@@ -58,24 +59,20 @@ class Scanner:
     def get_lowest_competitor_sellorder(
         self, sellorders: list[SnapshotBPListing]
     ) -> SnapshotBPListing | None:
-        lowest = None
-        for order in sellorders:
-            # Ignore items listed in dollars (marketplace.tf)
-            if order.currencies.keys == 0 and order.currencies.metal == 0:
-                continue
-            if order.steamid == self.steamid or order.is_spelled:
-                continue
-            if lowest is None or order.currencies < lowest.currencies:
-                lowest = order
-        return lowest
+        return self._lowest_sellorder(sellorders, exclude_own=True)
 
     def get_lowest_sellorder(
         self, sellorders: list[SnapshotBPListing]
     ) -> SnapshotBPListing | None:
+        return self._lowest_sellorder(sellorders)
+
+    def _lowest_sellorder(self, orders, exclude_own=False):
         lowest = None
-        for order in sellorders:
+        for order in orders:
             # Ignore items listed in dollars (marketplace.tf)
             if order.currencies.keys == 0 and order.currencies.metal == 0:
+                continue
+            if exclude_own and order.steamid == self.steamid:
                 continue
             if lowest is None or order.currencies < lowest.currencies:
                 lowest = order
