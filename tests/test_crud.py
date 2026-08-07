@@ -156,6 +156,23 @@ async def test_get_buyorder_states_by_ids(db_session):
     assert [s.listing_id for s in states] == ["L1"]
 
 
+async def test_get_stored_sellorder_states_filter(db_session):
+    await seed_sellorder_state(db_session, "L1", is_undercut=True)
+    await seed_sellorder_state(db_session, "L2", is_undercut=False)
+    all_states = await crud.get_stored_sellorder_states(db_session)
+    assert len(all_states) == 2
+    beaten = await crud.get_stored_sellorder_states(db_session, only_beaten=True)
+    assert [s.listing_id for s in beaten] == ["L1"]
+    assert beaten[0].listing.item.name == "Key"
+
+
+async def test_get_sellorder_states_by_ids(db_session):
+    await seed_sellorder_state(db_session, "L1")
+    await seed_sellorder_state(db_session, "L2")
+    states = await crud.get_sellorder_states_by_ids(db_session, ["L1"])
+    assert [s.listing_id for s in states] == ["L1"]
+
+
 async def test_save_buyorder_state_history_flags(db_session):
     await seed_listing(db_session)
     old = models.BuyorderState(listing_id="L1", steamid="s", item_name="Key")
@@ -214,3 +231,38 @@ async def test_save_sellorder_state_history_flags(db_session):
     assert h.competitor_price_changed is True
     assert h.price_updated_changed is True
     assert h.highest_buyer_changed is True
+
+
+async def test_get_buyorder_state_histories_filter_flags(db_session):
+    await seed_listing(db_session)
+    old = models.BuyorderState(listing_id="L1", steamid="s", item_name="Key")
+    new = models.BuyorderState(listing_id="L1", steamid="s", item_name="Key")
+    for s in (old, new):
+        s.user_keys = 1
+        s.user_metal = 0.0
+        s.top_competitor_keys = 10
+        s.top_competitor_metal = 0.0
+        s.is_outbid = True
+        s.lowest_seller_keys = 2
+        s.lowest_seller_metal = 0.0
+    old.is_outbid = False  # only the outbid flag changes (False -> True)
+    await crud.save_buyorder_state_history(db_session, old, new)
+    await db_session.commit()
+    outbid_only = await crud.get_stored_buyorder_state_histories(
+        db_session,
+        outbid=True,
+        regained_top=False,
+        competitor_price=False,
+        price_updated=False,
+        lowest_seller=False,
+    )
+    assert len(outbid_only) == 1
+    no_match = await crud.get_stored_buyorder_state_histories(
+        db_session,
+        outbid=False,
+        regained_top=False,
+        competitor_price=True,
+        price_updated=False,
+        lowest_seller=False,
+    )
+    assert len(no_match) == 0
