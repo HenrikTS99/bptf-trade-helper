@@ -50,7 +50,7 @@ def test_highest_competitor_buyorder_skips_own_and_spelled():
     assert s.get_highest_competitor_buyorder(orders) is None
 
 
-def test_highest_competitior_buyorder_empty():
+def test_highest_competitor_buyorder_empty():
     s = make_scanner()
     assert s.get_highest_competitor_buyorder([]) is None
 
