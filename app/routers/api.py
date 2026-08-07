@@ -46,7 +46,10 @@ async def snapshot(
 
 @router.get("/listings/{id}")
 async def get_listing_by_id(id: str, db: AsyncSession = Depends(get_db)):
-    return await get_listing(db, id)
+    listing = await get_listing(db, id)
+    if not listing:
+        raise HTTPException(status_code=404, detail="Listing not found")
+    return listing
 
 
 @router.get("/listings/sync")
