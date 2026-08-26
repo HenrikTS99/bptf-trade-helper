@@ -4,4 +4,4 @@ from app.core.scanner import Scanner
 
 settings = Settings()
 bp = BackpackTFClient(settings.bp_api_key, settings.bp_token)
-scanner = Scanner(bp)
+scanner = Scanner(settings.steam_id, bp)

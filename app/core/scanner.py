@@ -15,10 +15,10 @@ class BuyorderError(Exception):
 
 
 class Scanner:
-    def __init__(self, bp: BackpackTFClient):
+    def __init__(self, steamid: str, bp: BackpackTFClient):
         self.bp = bp
         # TODO: get user steamid
-        self.steamid = "76561198061440669"
+        self.steamid = steamid
 
     async def fetch_item_listings(self, item_name: str) -> list[SnapshotBPListing]:
         item_listings = await self.bp.get_snapshot(item_name)
