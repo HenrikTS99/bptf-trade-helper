@@ -3,6 +3,7 @@ import os
 # Dummy keys BEFORE importing the app
 os.environ.setdefault("BP_API_KEY", "test-key")
 os.environ.setdefault("BP_TOKEN", "test-token")
+os.environ.setdefault("STEAM_ID", "test-id")
 
 import pytest
 from httpx import ASGITransport, AsyncClient

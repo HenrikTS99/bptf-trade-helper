@@ -1,3 +1,4 @@
+import os
 from typing import cast
 
 import pytest
@@ -7,11 +8,11 @@ from app.core.scanner import BuyorderError, Scanner
 from app.models.enums import Intent
 from app.models.listings import CurrencyValue, SnapshotBPListing
 
-USER = "76561198061440669"
+USER = os.environ["STEAM_ID"]
 
 
 def make_scanner() -> Scanner:
-    return Scanner(bp=cast(BackpackTFClient, None))
+    return Scanner(steamid=USER, bp=cast(BackpackTFClient, None))
 
 
 def snap(steamid, keys, metal=0.0, spelled=False):
