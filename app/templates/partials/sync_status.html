@@ -11,9 +11,10 @@
 
   {% if tracker.phase.value == "completed" %}
   <small>{{ tracker.message }}</small>
+  {% if tracker.needs_reload %}
   <div hx-get="/{{ 'buyorders' if intent == 'buy' else 'sellorders' }}{{ '?only_beaten=True' if only_beaten }}"
        hx-trigger="load" hx-target="#main" hx-swap="outerHTML" hx-select="#main"></div>
-
+  {% endif %}
   {% elif tracker.phase.value == "failed" %}
   <small style="color: var(--pico-color-red)">{{ tracker.message }}</small>
   {% endif %}

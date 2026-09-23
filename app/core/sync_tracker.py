@@ -19,6 +19,7 @@ class SyncTracker:
     total: int = 0
     message: str = ""
     synced_ids: list[str] = field(default_factory=list)
+    needs_reload: bool = False
 
     @property
     def is_syncing(self) -> bool:
@@ -30,6 +31,7 @@ class SyncTracker:
         self.total = 0
         self.message = "Starting..."
         self.synced_ids.clear()
+        self.needs_reload = False
 
     def update_progress(self, current: int, total: int):
         self.current = current
@@ -39,6 +41,7 @@ class SyncTracker:
     def complete(self, elapsed: float):
         self.phase = SyncPhase.COMPLETED
         self.message = f"Done in {elapsed:.0f}s"
+        self.needs_reload = True
 
     def fail(self, error: str):
         self.phase = SyncPhase.FAILED

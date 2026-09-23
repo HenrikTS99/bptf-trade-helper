@@ -37,15 +37,18 @@ async def display_dashboard(
     db: AsyncSession = Depends(get_db),
 ):
     buyorders = await get_stored_buyorder_states(db, only_beaten=only_beaten)
-    return templates.TemplateResponse(
+    tracker = buy_sync_tracker
+    response = templates.TemplateResponse(
         request=request,
         name="pages/dashboard.html",
         context={
             "beaten_buyorders": buyorders,
             "only_beaten": only_beaten,
-            "tracker": buy_sync_tracker,
+            "tracker": tracker,
         },
     )
+    tracker.needs_reload = False
+    return response
 
 
 @router.get("/sellorders", response_class=HTMLResponse)
@@ -55,15 +58,18 @@ async def display_dashboard_sellorders(
     db: AsyncSession = Depends(get_db),
 ):
     sellorders = await get_stored_sellorder_states(db, only_beaten=only_beaten)
-    return templates.TemplateResponse(
+    tracker = sell_sync_tracker
+    response = templates.TemplateResponse(
         request=request,
         name="pages/dashboard_sellorders.html",
         context={
             "beaten_sellorders": sellorders,
             "only_beaten": only_beaten,
-            "tracker": sell_sync_tracker,
+            "tracker": tracker,
         },
     )
+    tracker.needs_reload = False
+    return response
 
 
 @router.get("/buyorders-history", response_class=HTMLResponse)
@@ -203,7 +209,7 @@ async def sync_status(
 
     tracker.synced_ids = [i for i in tracker.synced_ids if i not in ids]
 
-    return templates.TemplateResponse(
+    response = templates.TemplateResponse(
         request=request,
         name="partials/sync_status.html",
         context={
@@ -214,3 +220,5 @@ async def sync_status(
             "only_beaten": only_beaten,
         },
     )
+    tracker.needs_reload = False
+    return response
