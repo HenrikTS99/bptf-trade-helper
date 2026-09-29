@@ -1,6 +1,7 @@
 import copy
 import logging
 import math
+from collections.abc import Sequence
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -12,7 +13,7 @@ from app.crud import (
     upsert_listing,
 )
 from app.db import models
-from app.models.enums import Intent, RoundingMethod
+from app.models.enums import Intent, RoundingMethod, SortDirection
 from app.models.listings import BPListing, CurrencyValue
 
 logger = logging.getLogger(__name__)
@@ -183,3 +184,16 @@ def _update_competitor_status(
     ):
         state.is_undercut = False
         state.undercut_by = None
+
+
+def sort_order_states(
+    states: Sequence[models.BuyorderState | models.SellorderState],
+    sort: SortDirection | None,
+) -> list[models.BuyorderState | models.SellorderState]:
+    if not sort:
+        return list(states)
+    return sorted(
+        states,
+        key=lambda s: (s.user_keys or 0, s.user_metal or 0),
+        reverse=(sort == SortDirection.desc),
+    )

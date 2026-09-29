@@ -25,3 +25,9 @@
   to { background-color: transparent; }
 
 }
+
+th.sortable a {
+  text-decoration: none;
+}
+
+th.sortable a:hover { text-decoration: underline; }

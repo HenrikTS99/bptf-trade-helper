@@ -1,26 +1,14 @@
 {% extends "base.html" %}
 {% block content %}
 <div>
-    <label role="group">
-        <input type="checkbox" 
-            id="only-beaten"
-            name="only_beaten"
-            hx-get="/sellorders?only_beaten=True"
-            hx-target="#main"
-            hx-swap="outerHTML"
-            hx-trigger="change"
-            hx-vals='js:{"only_beaten": event.target.checked}'
-            hx-select="#main"
-            {% if only_beaten %} checked {% endif %}/>
-        Only Beaten
-    </label>
+    {% include "partials/only_beaten_toggle.html" %} 
     {% with intent="sell" %}{% include "partials/sync_status.html" %}{% endwith %}
 </div>
 <table class="striped">
     <thead>
         <tr>
             <th>Item</th>
-            <th>My Price</th>
+            {% include "partials/sortable_price_header.html" %}
             <th>Lowest competitor</th>
             <th>Highest Buyer</th>
             <th>Status</th>

@@ -24,14 +24,19 @@ async def seed_listing(
 
 
 async def seed_buyorder_state(
-    db_session, listing, user_keys=5, top_competitor_keys=10, is_outbid=True
+    db_session,
+    listing,
+    user_keys: int | None = 5,
+    user_metal: float | None = 0.0,
+    top_competitor_keys: int | None = 10,
+    is_outbid: bool = True,
 ):
     state = models.BuyorderState(
         listing_id=listing.id,
         steamid="s",
         item_name="Key",
         user_keys=user_keys,
-        user_metal=0.0,
+        user_metal=user_metal,
         top_competitor_keys=top_competitor_keys,
         top_competitor_metal=0.0,
         is_outbid=is_outbid,
@@ -46,17 +51,18 @@ async def seed_buyorder_state(
 async def seed_sellorder_state(
     db_session,
     listing,
-    user_keys=5,
-    lowest_competitor_keys=10,
-    is_undercut=True,
-    highest_buyer_keys=2,
+    user_keys: int | None = 5,
+    user_metal: float | None = 0.0,
+    lowest_competitor_keys: int | None = 10,
+    is_undercut: bool = True,
+    highest_buyer_keys: int | None = 2,
 ):
     state = models.SellorderState(
         listing_id=listing.id,
         steamid="s",
         item_name="Key",
         user_keys=user_keys,
-        user_metal=0.0,
+        user_metal=user_metal,
         lowest_competitor_keys=lowest_competitor_keys,
         lowest_competitor_metal=0.0,
         is_undercut=is_undercut,

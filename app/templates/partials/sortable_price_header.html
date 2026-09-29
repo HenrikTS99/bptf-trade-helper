@@ -1,0 +1,7 @@
+{% set next_sort = 'asc' if sort == 'desc' else 'desc' %}
+{% set url = request.url.path ~ '?sort=' ~ next_sort ~ ('&only_beaten=True' if only_beaten else '') %}
+<th class="sortable">
+  <a href="{{ url }}" hx-get="{{ url }}" hx-target="#main" hx-swap="outerHTML" hx-select="#main" hx-push-url="true">
+    My Price {% if sort == 'asc' %}&#9650;{% elif sort == 'desc' %}&#9660;{% endif %}
+  </a>
+</th>

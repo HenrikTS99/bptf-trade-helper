@@ -17,9 +17,10 @@ from app.crud import (
 )
 from app.db.base import get_db
 from app.dependencies import bp
-from app.models.enums import Intent, RoundingMethod
+from app.models.enums import Intent, RoundingMethod, SortDirection
 from app.scheduler import scheduler
 from app.services.listing_service import (
+    sort_order_states,
     update_listing_price,
     update_order_price,
 )
@@ -35,8 +36,10 @@ async def display_dashboard(
     request: Request,
     only_beaten: bool = Query(default=False),
     db: AsyncSession = Depends(get_db),
+    sort: SortDirection | None = Query(default=None),
 ):
     buyorders = await get_stored_buyorder_states(db, only_beaten=only_beaten)
+    buyorders = sort_order_states(buyorders, sort)
     tracker = buy_sync_tracker
     response = templates.TemplateResponse(
         request=request,
@@ -45,6 +48,7 @@ async def display_dashboard(
             "beaten_buyorders": buyorders,
             "only_beaten": only_beaten,
             "tracker": tracker,
+            "sort": sort,
         },
     )
     tracker.needs_reload = False
@@ -56,8 +60,10 @@ async def display_dashboard_sellorders(
     request: Request,
     only_beaten: bool = Query(default=False),
     db: AsyncSession = Depends(get_db),
+    sort: SortDirection | None = Query(default=None),
 ):
     sellorders = await get_stored_sellorder_states(db, only_beaten=only_beaten)
+    sellorders = sort_order_states(sellorders, sort)
     tracker = sell_sync_tracker
     response = templates.TemplateResponse(
         request=request,
@@ -66,6 +72,7 @@ async def display_dashboard_sellorders(
             "beaten_sellorders": sellorders,
             "only_beaten": only_beaten,
             "tracker": tracker,
+            "sort": sort,
         },
     )
     tracker.needs_reload = False

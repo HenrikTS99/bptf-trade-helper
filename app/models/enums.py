@@ -12,3 +12,8 @@ class RoundingMethod(StrEnum):
     NEAREST_10_KEY = "nearest_10-key"
     MATCH_PRICE = "match_price"
     DOWN_1_KEY = "down_1-key"
+
+
+class SortDirection(StrEnum):
+    asc = "asc"
+    desc = "desc"
