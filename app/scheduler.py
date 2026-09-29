@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import time
 
@@ -11,6 +12,7 @@ from app.services.scanner_service import (
 )
 
 scheduler = AsyncIOScheduler()
+_sync_lock = asyncio.Lock()
 
 
 logger = logging.getLogger(__name__)
@@ -37,9 +39,9 @@ def init_scheduler(bp, scanner) -> AsyncIOScheduler:
 async def _run_buyorder_sync(bp, scanner):
     logger.info("Starting scheduled sync and scan")
     start_time = time.time()
-    buy_sync_tracker.start()
+    buy_sync_tracker.start("Queued - waiting for another sync to finish...")
     try:
-        async with AsyncSessionLocal() as db:
+        async with _sync_lock, AsyncSessionLocal() as db:
             await sync_and_scan_orders(db, bp, scanner, buy_sync_tracker, Intent.buy)
     except Exception as e:
         logger.exception("Scheduled buyorder sync failed: %s", e)
@@ -53,9 +55,9 @@ async def _run_buyorder_sync(bp, scanner):
 async def _run_sellorder_sync(bp, scanner):
     logger.info("Starting scheduled sellorder sync")
     start_time = time.time()
-    sell_sync_tracker.start()
+    sell_sync_tracker.start("Queued - waiting for another sync to finish...")
     try:
-        async with AsyncSessionLocal() as db:
+        async with _sync_lock, AsyncSessionLocal() as db:
             await sync_and_scan_orders(db, bp, scanner, sell_sync_tracker, Intent.sell)
     except Exception as e:
         logger.exception("Scheduled sellorder sync failed: %s", e)

@@ -25,11 +25,11 @@ class SyncTracker:
     def is_syncing(self) -> bool:
         return self.phase == SyncPhase.SCANNING
 
-    def start(self):
+    def start(self, message: str = "Starting..."):
         self.phase = SyncPhase.SCANNING
         self.current = 0
         self.total = 0
-        self.message = "Starting..."
+        self.message = message
         self.synced_ids.clear()
         self.needs_reload = False
 
