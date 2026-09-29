@@ -88,11 +88,18 @@ class BackpackTFClient:
                 res = await self.client.get(path, params=params, headers=headers)
                 if res.status_code == 429:
                     try:
-                        wait = int(res.headers.get("Retry-After", attempt))
-                        logger.warning("Rate limited on %s, waiting %ds", path, wait)
+                        wait = int(
+                            res.headers.get("Retry-After", retry_delays[attempt])
+                        )
                     except ValueError:
-                        wait = attempt
-                    print("rate limited, waiting: ", wait)
+                        wait = retry_delays[attempt]
+                    logger.warning(
+                        "Rate limited on %s, waiting %ds (attempt %d/%d)",
+                        path,
+                        wait,
+                        attempt + 1,
+                        len(retry_delays),
+                    )
                     await asyncio.sleep(wait)
                     continue
                 res.raise_for_status()
