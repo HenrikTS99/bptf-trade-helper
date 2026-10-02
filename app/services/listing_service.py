@@ -13,7 +13,7 @@ from app.crud import (
     upsert_listing,
 )
 from app.db import models
-from app.models.enums import Intent, RoundingMethod, SortDirection
+from app.models.enums import Intent, RoundingMethod, SortDirection, SortField
 from app.models.listings import BPListing, CurrencyValue
 
 logger = logging.getLogger(__name__)
@@ -189,11 +189,35 @@ def _update_competitor_status(
 def sort_order_states(
     states: Sequence[models.BuyorderState | models.SellorderState],
     sort: SortDirection | None,
+    sort_by: SortField | None = None,
 ) -> list[models.BuyorderState | models.SellorderState]:
     if not sort:
         return list(states)
+
+    def key(s):
+        if sort_by == SortField.competitor:
+            if isinstance(s, models.SellorderState):
+                return (s.lowest_competitor_keys or 0, s.lowest_competitor_metal or 0)
+            return (s.top_competitor_keys or 0, s.top_competitor_metal or 0)
+        if sort_by == SortField.lowest_seller and isinstance(s, models.BuyorderState):
+            return (s.lowest_seller_keys or 0, s.lowest_seller_metal or 0)
+        if sort_by == SortField.highest_buyer and isinstance(s, models.SellorderState):
+            return (s.highest_buyer_keys or 0, s.highest_buyer_metal or 0)
+        if sort_by == SortField.status:
+            if isinstance(s, models.SellorderState):
+                return (
+                    (s.lowest_competitor_keys or 0) - (s.user_keys or 0),
+                    (s.lowest_competitor_metal or 0) - (s.user_metal or 0),
+                )
+            return (
+                (s.top_competitor_keys or 0) - (s.user_keys or 0),
+                (s.top_competitor_metal or 0) - (s.user_metal or 0),
+            )
+
+        return (s.user_keys or 0, s.user_metal or 0)
+
     return sorted(
         states,
-        key=lambda s: (s.user_keys or 0, s.user_metal or 0),
+        key=key,
         reverse=(sort == SortDirection.desc),
     )

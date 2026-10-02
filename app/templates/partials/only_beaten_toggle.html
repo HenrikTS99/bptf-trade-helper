@@ -1,4 +1,4 @@
-{% set url = request.url.path ~ ('?sort=' ~ sort if sort else '') %}
+{% set url = request.url.path ~ ('?sort=' ~ sort ~ '&sort_by=' ~ sort_by if sort else '') %}
 <label role="group">
   <input type="checkbox" id="only-beaten" name="only_beaten" hx-get="{{ url }}"
     hx-vals='js:{"only_beaten": event.target.checked}' hx-target="#main" hx-swap="outerHTML" hx-select="#main"

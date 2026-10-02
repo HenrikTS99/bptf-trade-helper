@@ -82,6 +82,52 @@ async def test_dashboard_sort_invalid_value_rejected(client):
     assert (await client.get("/", params={"sort": "sideways"})).status_code == 422
 
 
+async def test_dashboard_sort_by_invalid_value_rejected(client):
+    assert (await client.get("/", params={"sort_by": "sideways"})).status_code == 422
+
+
+@pytest.mark.parametrize(
+    "sort, expected", [("asc", ["L2", "L3", "L1"]), ("desc", ["L1", "L3", "L2"])]
+)
+async def test_dashboard_sort_by_lowest_seller(client, db_session, sort, expected):
+    for listing_id, seller_keys in {"L1": 7, "L2": 3, "L3": 5}.items():
+        listing, _ = await seed_listing(db_session, listing_id=listing_id)
+        await seed_buyorder_state(db_session, listing, lowest_seller_keys=seller_keys)
+    resp = await client.get("/", params={"sort": sort, "sort_by": "lowest_seller"})
+    assert row_order(resp.text) == expected
+
+
+@pytest.mark.parametrize(
+    "sort, expected", [("asc", ["S2", "S3", "S1"]), ("desc", ["S1", "S3", "S2"])]
+)
+async def test_sellorders_sort_by_highest_buyer(client, db_session, sort, expected):
+    for listing_id, buyer_keys in {"S1": 7, "S2": 3, "S3": 5}.items():
+        listing, _ = await seed_listing(
+            db_session, listing_id=listing_id, intent=Intent.sell
+        )
+        await seed_sellorder_state(db_session, listing, highest_buyer_keys=buyer_keys)
+    resp = await client.get(
+        "/sellorders", params={"sort": sort, "sort_by": "highest_buyer"}
+    )
+    assert row_order(resp.text) == expected
+
+
+async def test_dashboard_headers_match_buy_intent(client):
+    resp = await client.get("/")
+    assert resp.status_code == 200
+    assert "Top Competitor" in resp.text
+    assert "Lowest Seller" in resp.text
+    assert "Highest Buyer" not in resp.text
+
+
+async def test_sellorders_headers_match_sell_intent(client):
+    resp = await client.get("/sellorders")
+    assert resp.status_code == 200
+    assert "Lowest Competitor" in resp.text
+    assert "Highest Buyer" in resp.text
+    assert "Lowest Seller" not in resp.text
+
+
 @pytest.mark.parametrize(
     "sort, next_direction, arrow",
     [
@@ -101,19 +147,19 @@ async def test_dashboard_sort_header_and_arrow(client, sort, next_direction, arr
 
 
 async def test_only_beaten_toggle_preserves_sort(client):
-    resp = await client.get("/", params={"sort": "desc"})
-    assert 'hx-get="/?sort=desc"' in resp.text
+    resp = await client.get("/", params={"sort": "desc", "sort_by": "competitor"})
+    assert 'hx-get="/?sort=desc&amp;sort_by=competitor"' in resp.text
 
 
 async def test_sort_header_preserves_only_beaten(client):
     resp = await client.get("/", params={"sort": "desc", "only_beaten": "True"})
-    assert 'href="/?sort=asc&amp;only_beaten=True' in resp.text
+    assert 'href="/?sort=asc&amp;sort_by=owner&amp;only_beaten=True' in resp.text
 
 
 async def test_sellorders_dashboard_renders(client):
     resp = await client.get("/sellorders")
     assert resp.status_code == 200
-    assert "Lowest competitor" in resp.text
+    assert "Lowest Competitor" in resp.text
 
 
 async def test_sellorders_shows_seeded(client, db_session):
@@ -147,8 +193,10 @@ async def test_sellorders_sort_desc(client, db_session):
 
 
 async def test_sellorders_only_beaten_toggle_preserves_sort(client):
-    resp = await client.get("/sellorders", params={"sort": "asc"})
-    assert 'hx-get="/sellorders?sort=asc"' in resp.text
+    resp = await client.get(
+        "/sellorders", params={"sort": "asc", "sort_by": "highest_buyer"}
+    )
+    assert 'hx-get="/sellorders?sort=asc&amp;sort_by=highest_buyer"' in resp.text
 
 
 async def test_round_price_missing_listing_404(client):

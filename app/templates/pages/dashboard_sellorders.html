@@ -2,16 +2,16 @@
 {% block content %}
 <div>
     {% include "partials/only_beaten_toggle.html" %} 
-    {% with intent="sell" %}{% include "partials/sync_status.html" %}{% endwith %}
+    {% with intent=intent %}{% include "partials/sync_status.html" %}{% endwith %}
 </div>
 <table class="striped">
     <thead>
         <tr>
             <th>Item</th>
-            {% include "partials/sortable_price_header.html" %}
-            <th>Lowest competitor</th>
-            <th>Highest Buyer</th>
-            <th>Status</th>
+            {% with listing_type="owner" %}{% include "partials/sortable_price_header.html" %}{% endwith %}
+            {% with listing_type="competitor" %}{% include "partials/sortable_price_header.html" %}{% endwith %}
+            {% with listing_type="highest_buyer" %}{% include "partials/sortable_price_header.html" %}{% endwith %}
+            {% with listing_type="status" %}{% include "partials/sortable_price_header.html" %}{% endwith %}
             <th>Actions</th>
         </tr>
     </thead>

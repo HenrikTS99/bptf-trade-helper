@@ -17,7 +17,7 @@ from app.crud import (
 )
 from app.db.base import get_db
 from app.dependencies import bp
-from app.models.enums import Intent, RoundingMethod, SortDirection
+from app.models.enums import Intent, RoundingMethod, SortDirection, SortField
 from app.scheduler import scheduler
 from app.services.listing_service import (
     sort_order_states,
@@ -37,18 +37,21 @@ async def display_dashboard(
     only_beaten: bool = Query(default=False),
     db: AsyncSession = Depends(get_db),
     sort: SortDirection | None = Query(default=None),
+    sort_by: SortField | None = Query(default=SortField.owner),
 ):
     buyorders = await get_stored_buyorder_states(db, only_beaten=only_beaten)
-    buyorders = sort_order_states(buyorders, sort)
+    buyorders = sort_order_states(buyorders, sort, sort_by)
     tracker = buy_sync_tracker
     response = templates.TemplateResponse(
         request=request,
         name="pages/dashboard.html",
         context={
             "beaten_buyorders": buyorders,
+            "intent": Intent.buy,
             "only_beaten": only_beaten,
             "tracker": tracker,
             "sort": sort,
+            "sort_by": sort_by,
         },
     )
     tracker.needs_reload = False
@@ -61,18 +64,21 @@ async def display_dashboard_sellorders(
     only_beaten: bool = Query(default=False),
     db: AsyncSession = Depends(get_db),
     sort: SortDirection | None = Query(default=None),
+    sort_by: SortField | None = Query(default=SortField.owner),
 ):
     sellorders = await get_stored_sellorder_states(db, only_beaten=only_beaten)
-    sellorders = sort_order_states(sellorders, sort)
+    sellorders = sort_order_states(sellorders, sort, sort_by)
     tracker = sell_sync_tracker
     response = templates.TemplateResponse(
         request=request,
         name="pages/dashboard_sellorders.html",
         context={
             "beaten_sellorders": sellorders,
+            "intent": Intent.sell,
             "only_beaten": only_beaten,
             "tracker": tracker,
             "sort": sort,
+            "sort_by": sort_by,
         },
     )
     tracker.needs_reload = False

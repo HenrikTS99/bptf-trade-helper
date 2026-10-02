@@ -17,3 +17,11 @@ class RoundingMethod(StrEnum):
 class SortDirection(StrEnum):
     asc = "asc"
     desc = "desc"
+
+
+class SortField(StrEnum):
+    owner = "owner"
+    competitor = "competitor"
+    lowest_seller = "lowest_seller"
+    highest_buyer = "highest_buyer"
+    status = "status"

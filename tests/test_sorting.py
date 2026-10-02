@@ -3,27 +3,51 @@
 import pytest
 
 from app.db import models
-from app.models.enums import SortDirection
+from app.models.enums import SortDirection, SortField
 from app.services.listing_service import sort_order_states
 
 
-def buy_state(listing_id, keys, metal=0.0):
+def buy_state(
+    listing_id,
+    keys,
+    metal=0.0,
+    competitor_keys=None,
+    competitor_metal=None,
+    market_keys=None,
+    market_metal=None,
+):
     return models.BuyorderState(
         listing_id=listing_id,
         steamid="s",
         item_name="Key",
         user_keys=keys,
         user_metal=metal,
+        top_competitor_keys=competitor_keys,
+        top_competitor_metal=competitor_metal,
+        lowest_seller_keys=market_keys,
+        lowest_seller_metal=market_metal,
     )
 
 
-def sell_state(listing_id, keys, metal=0.0):
+def sell_state(
+    listing_id,
+    keys,
+    metal=0.0,
+    competitor_keys=None,
+    competitor_metal=None,
+    market_keys=None,
+    market_metal=None,
+):
     return models.SellorderState(
         listing_id=listing_id,
         steamid="s",
         item_name="Key",
         user_keys=keys,
         user_metal=metal,
+        lowest_competitor_keys=competitor_keys,
+        lowest_competitor_metal=competitor_metal,
+        highest_buyer_keys=market_keys,
+        highest_buyer_metal=market_metal,
     )
 
 
@@ -73,3 +97,93 @@ def test_sorts_sellorder_states():
 
 def test_empty_input():
     assert sort_order_states([], SortDirection.asc) == []
+
+
+@pytest.mark.parametrize(
+    "sort, expected",
+    [(SortDirection.asc, ["L3", "L1", "L2"]), (SortDirection.desc, ["L2", "L1", "L3"])],
+)
+def test_sorts_buyorders_by_top_competitor(sort, expected):
+    states = [
+        buy_state("L1", 1, competitor_keys=5),
+        buy_state("L2", 9, competitor_keys=8),
+        buy_state("L3", 4, competitor_keys=2),
+    ]
+    result = sort_order_states(states, sort, SortField.competitor)
+    assert ids(result) == expected
+
+
+@pytest.mark.parametrize(
+    "sort, expected",
+    [(SortDirection.asc, ["L3", "L1", "L2"]), (SortDirection.desc, ["L2", "L1", "L3"])],
+)
+def test_sorts_sellorders_by_lowest_competitor(sort, expected):
+    states = [
+        sell_state("L1", 9, competitor_keys=5),
+        sell_state("L2", 1, competitor_keys=8),
+        sell_state("L3", 4, competitor_keys=2),
+    ]
+    result = sort_order_states(states, sort, SortField.competitor)
+    assert ids(result) == expected
+
+
+def test_sorts_buyorders_by_lowest_seller():
+    states = [
+        buy_state("L1", 1, market_keys=7),
+        buy_state("L2", 9, market_keys=3),
+        buy_state("L3", 4, market_keys=5),
+    ]
+    result = sort_order_states(states, SortDirection.asc, SortField.lowest_seller)
+    assert ids(result) == ["L2", "L3", "L1"]
+
+
+def test_sorts_sellorders_by_highest_buyer():
+    states = [
+        sell_state("L1", 1, market_keys=7),
+        sell_state("L2", 9, market_keys=3),
+        sell_state("L3", 4, market_keys=5),
+    ]
+    result = sort_order_states(states, SortDirection.desc, SortField.highest_buyer)
+    assert ids(result) == ["L1", "L3", "L2"]
+
+
+def test_sorts_buyorders_by_status_delta():
+    states = [
+        buy_state("L1", 5, competitor_keys=6),
+        buy_state("L2", 5, competitor_keys=2),
+        buy_state("L3", 5, competitor_keys=4),
+    ]
+    result = sort_order_states(states, SortDirection.asc, SortField.status)
+    assert ids(result) == ["L2", "L3", "L1"]
+
+
+def test_sorts_sellorders_by_status_delta():
+    states = [
+        sell_state("L1", 5, competitor_keys=6),
+        sell_state("L2", 5, competitor_keys=2),
+        sell_state("L3", 5, competitor_keys=4),
+    ]
+    result = sort_order_states(states, SortDirection.asc, SortField.status)
+    assert ids(result) == ["L2", "L3", "L1"]
+
+
+def test_sort_by_field_treats_none_as_zero():
+    states = [buy_state("L1", 1, competitor_keys=10), buy_state("L2", 9)]
+    result = sort_order_states(states, SortDirection.asc, SortField.competitor)
+    assert ids(result) == ["L2", "L1"]
+
+
+@pytest.mark.parametrize(
+    "sort_by, make_state",
+    [
+        (SortField.lowest_seller, sell_state),
+        (SortField.highest_buyer, buy_state),
+    ],
+)
+def test_sort_by_market_field_falls_back_for_other_intent(sort_by, make_state):
+    states = [
+        make_state("L1", 10, market_keys=1),
+        make_state("L2", 5, market_keys=99),
+    ]
+    result = sort_order_states(states, SortDirection.asc, sort_by)
+    assert ids(result) == ["L2", "L1"]

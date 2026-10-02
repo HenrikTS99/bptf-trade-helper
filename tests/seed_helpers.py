@@ -30,6 +30,7 @@ async def seed_buyorder_state(
     user_metal: float | None = 0.0,
     top_competitor_keys: int | None = 10,
     is_outbid: bool = True,
+    lowest_seller_keys: int | None = 2,
 ):
     state = models.BuyorderState(
         listing_id=listing.id,
@@ -40,7 +41,7 @@ async def seed_buyorder_state(
         top_competitor_keys=top_competitor_keys,
         top_competitor_metal=0.0,
         is_outbid=is_outbid,
-        lowest_seller_keys=2,
+        lowest_seller_keys=lowest_seller_keys,
         lowest_seller_metal=0.0,
     )
     db_session.add(state)
