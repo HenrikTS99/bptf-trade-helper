@@ -20,6 +20,7 @@ It will then update listing data, and detect outbids, undercuts, and competitor 
 - View all buyorders and sellorders with current status, if winning or beaten, and by how much.
 - One-click actions to match or beat competitors by different amounts.
 <img src="https://gyazo.com/1e63f8a5326511021dad1d6b21b05b18.gif" alt="Updating buyorders in dashboard example">
+
 ### History
 
 Track listing state changes for buyorders and sellorders over time with dynamic filters for outbids, undercuts, price changes and competitor changes.
