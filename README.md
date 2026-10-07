@@ -2,6 +2,12 @@
 
 BPTF Trade Helper is a FastAPI web application designed to help users manage their sell- and buyorders on the Team Fortress 2 trading site [backpack.tf](https://backpack.tf).
 
+## Status
+
+The project is under development and is not yet complete. The UI uses mostly placeholder styling.  
+
+This application is currently deployed and running on a Raspberry Pi as a private instance through a Cloudflare Tunnel. Core functionality is implemented, with additional features and fixes still in development.
+
 ## Features
 
 ### Automated Price Scanning
@@ -13,11 +19,12 @@ It will then update listing data, and detect outbids, undercuts, and competitor 
 
 - View all buyorders and sellorders with current status, if winning or beaten, and by how much.
 - One-click actions to match or beat competitors by different amounts.
-
+<img src="https://gyazo.com/1e63f8a5326511021dad1d6b21b05b18.gif" alt="Updating buyorders in dashboard example">
 ### History
 
-Track listing state changes for buyorders and sellorders over time with filters for outbids, undercuts, price changes and competitor changes.
+Track listing state changes for buyorders and sellorders over time with dynamic filters for outbids, undercuts, price changes and competitor changes.
 You can filter through which changes you would like to be displayed, with relevant filters on by default.
+<img src="https://gyazo.com/3cdb66462000791630080407121deff2.png" alt="Image of Buyorder History">
 
 ## Tech Stack
 
